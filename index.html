@@ -126,33 +126,37 @@ function newPattern(){
 function drumSound(time,strong){
   if(!audioCtx)return;
 
-  // Short synthesized drum-like click/thump; no external audio files needed.
+  // Crisp drum hit: short low sine body + sharp noise attack.
   const osc=audioCtx.createOscillator();
   const gain=audioCtx.createGain();
 
-  osc.type='triangle';
-  osc.frequency.setValueAtTime(strong?150:105,time);
-  osc.frequency.exponentialRampToValueAtTime(strong?62:58,time+0.10);
+  osc.type='sine';
+  osc.frequency.setValueAtTime(strong?185:145,time);
+  osc.frequency.exponentialRampToValueAtTime(strong?72:65,time+0.075);
 
   gain.gain.setValueAtTime(0.0001,time);
-  gain.gain.exponentialRampToValueAtTime(strong?0.9:0.55,time+0.006);
-  gain.gain.exponentialRampToValueAtTime(0.0001,time+0.16);
+  gain.gain.exponentialRampToValueAtTime(strong?0.72:0.48,time+0.003);
+  gain.gain.exponentialRampToValueAtTime(0.0001,time+0.095);
 
   osc.connect(gain);
   gain.connect(audioCtx.destination);
   osc.start(time);
-  osc.stop(time+0.17);
+  osc.stop(time+0.10);
 
-  // Tiny noise burst for a more drum-like attack.
-  const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*0.045,audioCtx.sampleRate);
+  const length=Math.floor(audioCtx.sampleRate*0.022);
+  const buffer=audioCtx.createBuffer(1,length,audioCtx.sampleRate);
   const data=buffer.getChannelData(0);
-  for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.exp(-i/data.length*7);
+
+  for(let i=0;i<length;i++){
+    const envelope=Math.exp(-i/Math.max(1,length*0.16));
+    data[i]=(Math.random()*2-1)*envelope;
+  }
 
   const noise=audioCtx.createBufferSource();
   const ng=audioCtx.createGain();
   noise.buffer=buffer;
-  ng.gain.setValueAtTime(strong?0.12:0.07,time);
-  ng.gain.exponentialRampToValueAtTime(0.0001,time+0.045);
+  ng.gain.setValueAtTime(strong?0.22:0.14,time);
+  ng.gain.exponentialRampToValueAtTime(0.0001,time+0.022);
   noise.connect(ng);
   ng.connect(audioCtx.destination);
   noise.start(time);
@@ -173,7 +177,7 @@ function scheduler(){
   if(!audioCtx || !running)return;
 
   // Short look-ahead keeps the audio clock steady while the page redraws.
-  while(nextNoteTime < audioCtx.currentTime + 0.15){
+  while(nextNoteTime < audioCtx.currentTime + 0.10){
     const m=measure%4;
     const p=patterns[m];
     const b=beat;
@@ -223,7 +227,7 @@ async function start(){
   // Always start from the current AudioContext clock.
   nextNoteTime=audioCtx.currentTime+0.08;
   scheduler();
-  timer=window.setInterval(scheduler,25);
+  timer=window.setInterval(scheduler,15);
 }
 
 function stop(){
