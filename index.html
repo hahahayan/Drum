@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;min-height:100%;background:#101010;color:#f7f7f7;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;overflow:auto}
-.app{width:94vw;max-width:900px;min-height:100svh;height:auto;margin:auto;padding:clamp(10px,2vh,22px) 0;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,12px)}
+.app{width:min(94vw,900px);min-height:100svh;height:auto;margin:auto;padding:clamp(10px,2vh,22px) 0;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,12px)}
 h1{text-align:center;margin:0;font-size:clamp(27px,4vw,52px);line-height:1.05;letter-spacing:-.05em}
 .sub{text-align:center;margin:3px 0 0;color:#aaa;font-size:clamp(13px,1.7vw,22px)}
 .panel{background:#1d1d1d;border-radius:24px;padding:clamp(10px,1.7vh,20px) clamp(18px,3vw,35px)}
@@ -88,6 +88,7 @@ let timer=null;
 let beat=0;
 let measure=0;
 let nextNoteTime=0;
+let sessionId=0;
 
 function render(){
   patterns.forEach((p,i)=>{
@@ -169,11 +170,10 @@ function showBeat(m,b,delay){
 }
 
 function scheduler(){
-  if(!audioCtx)return;
+  if(!audioCtx || !running)return;
 
-  // Schedule about 120 ms ahead using AudioContext time, so timing stays stable
-  // even if Safari repaints the page.
-  while(nextNoteTime < audioCtx.currentTime + 0.12){
+  // Short look-ahead keeps the audio clock steady while the page redraws.
+  while(nextNoteTime < audioCtx.currentTime + 0.15){
     const m=measure%4;
     const p=patterns[m];
     const b=beat;
@@ -188,6 +188,7 @@ function scheduler(){
     if(beat>=4){
       beat=0;
       measure++;
+
       if(document.getElementById('random').checked){
         patterns[measure%4]=randomPattern();
         render();
@@ -199,6 +200,11 @@ function scheduler(){
 async function start(){
   if(running)return;
 
+  if(timer){
+    window.clearInterval(timer);
+    timer=null;
+  }
+
   if(!audioCtx){
     audioCtx=new(window.AudioContext||window.webkitAudioContext)();
   }
@@ -208,22 +214,27 @@ async function start(){
   }
 
   running=true;
+  sessionId++;
   beat=0;
   measure=0;
   statusEl.textContent='GO!';
   clearHits();
 
-  nextNoteTime=audioCtx.currentTime+0.05;
+  // Always start from the current AudioContext clock.
+  nextNoteTime=audioCtx.currentTime+0.08;
   scheduler();
   timer=window.setInterval(scheduler,25);
 }
 
 function stop(){
   running=false;
+  sessionId++;
+
   if(timer){
     window.clearInterval(timer);
     timer=null;
   }
+
   statusEl.textContent='READY';
   clearHits();
 }
