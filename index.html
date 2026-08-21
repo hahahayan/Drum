@@ -20,7 +20,7 @@ input[type=range]{width:100%;height:26px;accent-color:#4285f4}
 .mode input:checked{border:8px solid #4d8df5}
 #status{text-align:center;font-size:clamp(58px,8vw,96px);font-weight:900;line-height:.9;margin:clamp(3px,1vh,10px) 0}
 .grid{display:block;flex:0 0 auto}
-.measure{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(8px,1.5vw,14px)}
+.measure{transition:transform .28s ease;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(8px,1.5vw,14px)}
 .beat-group{height:clamp(120px,16vh,165px);background:#252525;border:4px solid #343434;border-radius:22px;padding:8px 7px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
 .beat-group.active{border-color:#555}
 .beat-num{font-size:clamp(36px,4.8vw,62px);font-weight:900;line-height:1}
@@ -113,6 +113,9 @@ let measure=0;
 let nextNoteTime=0;
 let sessionId=0;
 
+// Rolling view: top row = current pair, bottom row = next pair.
+let windowStart=0;
+
 function render(){
   patterns.forEach((p,i)=>{
     const slots=document.getElementById('slots'+i);
@@ -142,6 +145,7 @@ function newPattern(){
   patterns=[
     randomPattern(),randomPattern(),randomPattern(),randomPattern()
   ];
+  windowStart=0;
   render();
   clearHits();
   stop();
@@ -187,6 +191,39 @@ function drumSound(time,strong){
   body.stop(time+0.075);
 }
 
+function updateRollingView(){
+  const measureEl=document.querySelector('.measure');
+  if(!measureEl)return;
+  const first=document.getElementById('group0');
+  const second=document.getElementById('group2');
+  if(!first || !second)return;
+
+  // Move the current top row out, then rotate the four logical patterns.
+  // The CSS grid's row height is the card height plus the row gap.
+  const h=first.getBoundingClientRect().height;
+  const style=getComputedStyle(measureEl);
+  const gap=parseFloat(style.rowGap || style.gap || '10') || 10;
+  measureEl.style.transform=`translateY(-${h+gap}px)`;
+
+  window.setTimeout(()=>{
+    if(!running)return;
+    patterns=[
+      patterns[2],
+      patterns[3],
+      randomPattern(),
+      randomPattern()
+    ];
+    windowStart=0;
+    measureEl.style.transition='none';
+    measureEl.style.transform='translateY(0)';
+    render();
+    // Force the browser to re-enable the transition for the next slide.
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{ measureEl.style.transition='transform .28s ease'; });
+    });
+  },300);
+}
+
 function showBeat(m,b,delay){
   window.setTimeout(()=>{
     if(!running)return;
@@ -218,9 +255,10 @@ function scheduler(){
       beat=0;
       measure++;
 
-      if(measure%4===0 && document.getElementById('random').checked){
-        for(let i=0;i<4;i++)patterns[i]=randomPattern();
-        render();
+      // In random mode, after measures 1-2 finish, slide 3-4 upward
+      // and generate the next 1-2 underneath them.
+      if(measure%2===0 && document.getElementById('random').checked){
+        updateRollingView();
       }
     }
   }
@@ -246,6 +284,12 @@ async function start(){
   sessionId++;
   beat=0;
   measure=0;
+  const measureEl=document.querySelector('.measure');
+  if(measureEl){
+    measureEl.style.transition='none';
+    measureEl.style.transform='translateY(0)';
+    requestAnimationFrame(()=>{ measureEl.style.transition='transform .28s ease'; });
+  }
   statusEl.textContent='GO!';
   clearHits();
 
