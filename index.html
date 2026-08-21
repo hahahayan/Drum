@@ -71,69 +71,174 @@ button{border:0;border-radius:18px;padding:11px 22px;background:#303030;color:#f
 </main>
 
 <script>
-const grid=document.getElementById('grid'), statusEl=document.getElementById('status');
-const bpm=document.getElementById('bpm'), bpmValue=document.getElementById('bpmValue');
-let patterns=[['<','_','_','_'],['<','_','_','<'],['<','<','_','_'],['<','<','_','<']];
-let ctx=null,timer=null,running=false,beat=0,measure=0,nextTime=0;
+const bpm=document.getElementById('bpm');
+const bpmValue=document.getElementById('bpmValue');
+const statusEl=document.getElementById('status');
+
+let patterns=[
+ ['<','_','_','_'],
+ ['<','_','_','<'],
+ ['<','<','_','_'],
+ ['<','<','_','<']
+];
+
+let audioCtx=null;
+let running=false;
+let timer=null;
+let beat=0;
+let measure=0;
+let nextNoteTime=0;
 
 function render(){
- patterns.forEach((p,i)=>{
-  p.forEach((x,j)=>{
-   const n=document.getElementById('n'+i+'_'+j);
-   if(n){n.textContent=x;n.classList.toggle('strong',x==='<');}
+  patterns.forEach((p,i)=>{
+    p.forEach((x,j)=>{
+      const n=document.getElementById('n'+i+'_'+j);
+      if(n){
+        n.textContent=x;
+        n.classList.toggle('strong',x==='<');
+      }
+    });
   });
- });
 }
-function randomPattern(){return Array.from({length:4},()=>Math.random()<.5?'<':'_')}
-function newPattern(){patterns=[randomPattern(),randomPattern(),randomPattern(),randomPattern()];render();clearHits();statusEl.textContent='READY'}
+
+function randomPattern(){
+  const p=Array.from({length:4},()=>Math.random()<.5?'<':'_');
+  // Always keep the first beat accented so a random bar has a clear pulse.
+  p[0]='<';
+  return p;
+}
+
 function clearHits(){
- document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
- document.querySelectorAll('.note').forEach(n=>n.classList.remove('hit'));
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.note').forEach(n=>n.classList.remove('hit'));
 }
-function sound(t,strong){
- const o=ctx.createOscillator(),g=ctx.createGain();
- o.type='sine';o.frequency.setValueAtTime(strong?145:105,t);
- o.frequency.exponentialRampToValueAtTime(strong?70:55,t+.06);
- g.gain.setValueAtTime(.0001,t);
- g.gain.exponentialRampToValueAtTime(strong?.72:.38,t+.004);
- g.gain.exponentialRampToValueAtTime(.0001,t+.13);
- o.connect(g);g.connect(ctx.destination);o.start(t);o.stop(t+.14);
-}
-function visual(m,b,t){
- const delay=Math.max(0,(t-ctx.currentTime)*1000);
- setTimeout(()=>{
-  if(!running)return;
+
+function newPattern(){
+  patterns=[
+    randomPattern(),randomPattern(),randomPattern(),randomPattern()
+  ];
+  render();
   clearHits();
-  const c=document.getElementById('card'+m),n=document.getElementById('n'+m+'_'+b);
-  if(c)c.classList.add('active'); if(n)n.classList.add('hit');
-  statusEl.textContent=String(m+1);
- },delay);
+  stop();
 }
+
+function drumSound(time,strong){
+  if(!audioCtx)return;
+
+  // Short synthesized drum-like click/thump; no external audio files needed.
+  const osc=audioCtx.createOscillator();
+  const gain=audioCtx.createGain();
+
+  osc.type='triangle';
+  osc.frequency.setValueAtTime(strong?150:105,time);
+  osc.frequency.exponentialRampToValueAtTime(strong?62:58,time+0.10);
+
+  gain.gain.setValueAtTime(0.0001,time);
+  gain.gain.exponentialRampToValueAtTime(strong?0.9:0.55,time+0.006);
+  gain.gain.exponentialRampToValueAtTime(0.0001,time+0.16);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(time);
+  osc.stop(time+0.17);
+
+  // Tiny noise burst for a more drum-like attack.
+  const buffer=audioCtx.createBuffer(1,audioCtx.sampleRate*0.045,audioCtx.sampleRate);
+  const data=buffer.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1)*Math.exp(-i/data.length*7);
+
+  const noise=audioCtx.createBufferSource();
+  const ng=audioCtx.createGain();
+  noise.buffer=buffer;
+  ng.gain.setValueAtTime(strong?0.12:0.07,time);
+  ng.gain.exponentialRampToValueAtTime(0.0001,time+0.045);
+  noise.connect(ng);
+  ng.connect(audioCtx.destination);
+  noise.start(time);
+}
+
+function showBeat(m,b,delay){
+  window.setTimeout(()=>{
+    if(!running)return;
+    clearHits();
+    const card=document.getElementById('card'+m);
+    const note=document.getElementById('n'+m+'_'+b);
+    if(card)card.classList.add('active');
+    if(note)note.classList.add('hit');
+  },Math.max(0,delay));
+}
+
 function scheduler(){
- while(nextTime<ctx.currentTime+.12){
-  const m=measure%4,p=patterns[m],s=p[beat];
-  sound(nextTime,s==='<');visual(m,beat,nextTime);
-  nextTime+=60/Number(bpm.value); beat++;
-  if(beat>=4){beat=0;measure++;if(document.getElementById('random').checked){patterns[measure%4]=randomPattern();render()}}
- }
+  if(!audioCtx)return;
+
+  // Schedule about 120 ms ahead using AudioContext time, so timing stays stable
+  // even if Safari repaints the page.
+  while(nextNoteTime < audioCtx.currentTime + 0.12){
+    const m=measure%4;
+    const p=patterns[m];
+    const b=beat;
+    const strong=p[b]==='<';
+
+    drumSound(nextNoteTime,strong);
+    showBeat(m,b,(nextNoteTime-audioCtx.currentTime)*1000);
+
+    nextNoteTime += 60 / Number(bpm.value);
+    beat++;
+
+    if(beat>=4){
+      beat=0;
+      measure++;
+      if(document.getElementById('random').checked){
+        patterns[measure%4]=randomPattern();
+        render();
+      }
+    }
+  }
 }
+
 async function start(){
- if(running)return;
- if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)();
- if(ctx.state==='suspended')await ctx.resume();
- running=true;beat=0;measure=0;statusEl.textContent='1';nextTime=ctx.currentTime+.08;
- scheduler();timer=setInterval(scheduler,25);
+  if(running)return;
+
+  if(!audioCtx){
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+
+  if(audioCtx.state==='suspended'){
+    await audioCtx.resume();
+  }
+
+  running=true;
+  beat=0;
+  measure=0;
+  statusEl.textContent='GO!';
+  clearHits();
+
+  nextNoteTime=audioCtx.currentTime+0.05;
+  scheduler();
+  timer=window.setInterval(scheduler,25);
 }
+
 function stop(){
- running=false;if(timer){clearInterval(timer);timer=null}
- statusEl.textContent='READY';clearHits();
+  running=false;
+  if(timer){
+    window.clearInterval(timer);
+    timer=null;
+  }
+  statusEl.textContent='READY';
+  clearHits();
 }
+
 bpm.addEventListener('input',()=>bpmValue.textContent=bpm.value);
-document.getElementById('start').onclick=start;
-document.getElementById('stop').onclick=stop;
-document.getElementById('new').onclick=newPattern;
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&running)stop()});
+document.getElementById('start').addEventListener('click',start);
+document.getElementById('stop').addEventListener('click',stop);
+document.getElementById('new').addEventListener('click',newPattern);
+
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden)stop();
+});
+
 render();
+statusEl.textContent='READY';
 </script>
 </body>
 </html>
