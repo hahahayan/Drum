@@ -2,202 +2,340 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>드럼 강약 연습기</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;width:100%;min-height:100%;background:#111}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:#fff;text-align:center;padding:clamp(8px,1.5vh,16px);overflow:hidden}
-.wrap{width:min(96vw,760px);height:calc(100vh - clamp(16px,3vh,32px));margin:auto;display:flex;flex-direction:column;justify-content:space-between}
-h1{font-size:clamp(25px,4.8vh,42px);line-height:1.05;margin:0;font-weight:800}
-.sub{font-size:clamp(12px,2.4vh,20px);color:#aaa;margin:0}
-.panel{background:#1d1d1d;border-radius:clamp(12px,2vh,20px);padding:clamp(8px,1.8vh,16px) 18px;margin:0}
-.bpm-title{font-size:clamp(18px,3.4vh,28px);font-weight:800;margin-bottom:clamp(4px,1vh,9px)}
-.bpm{display:flex;flex-direction:column;gap:clamp(5px,1vh,9px);align-items:center}
-input[type=range]{width:88%;height:clamp(16px,2.4vh,24px);accent-color:#4b8df8}
-input[type=number]{width:clamp(100px,22vw,170px);font-size:clamp(17px,2.8vh,24px);text-align:center;padding:clamp(4px,0.8vh,8px);background:#2b2b2b;color:#fff;border:2px solid #555;border-radius:clamp(8px,1.5vh,12px)}
-.mode{display:flex;justify-content:center;gap:clamp(14px,3vw,28px);flex-wrap:wrap;margin-top:0;font-size:clamp(13px,2.4vh,19px)}
-.mode label{display:flex;align-items:center;gap:5px}
-.mode input{width:clamp(17px,2.5vh,23px);height:clamp(17px,2.5vh,23px);accent-color:#4b8df8}
-#current{font-size:clamp(30px,6vh,58px);font-weight:800;line-height:1;min-height:clamp(32px,6vh,58px);margin:0}
-.beats{display:grid;grid-template-columns:repeat(2,1fr);gap:clamp(7px,1.3vh,12px);margin:0}
-.beat{background:#252525;border:3px solid #333;border-radius:clamp(12px,1.8vh,18px);padding:clamp(7px,1.4vh,13px) 8px;min-height:0;height:clamp(105px,17vh,155px);display:flex;flex-direction:column;justify-content:center;transition:.08s}
-.beat.active{transform:scale(1.02);border-color:#fff;background:#3a3a3a}
-.num{font-size:clamp(34px,5.5vh,52px);font-weight:800;line-height:1}
-.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(4px,0.8vw,8px);margin-top:clamp(8px,1.4vh,13px);padding:0 clamp(3px,0.7vw,7px)}
-.slot{font-size:clamp(20px,3.6vh,32px);font-weight:800;line-height:1;height:clamp(26px,4vh,38px);display:flex;align-items:center;justify-content:center;border:0;border-radius:0}
-.slot.strong{color:#ff6b6b}
-.slot.weak{color:#66c7ff}
-.controls{white-space:nowrap}
-button{font-size:clamp(14px,2.4vh,19px);padding:clamp(8px,1.5vh,13px) clamp(12px,2.5vw,22px);border:0;border-radius:12px;margin:2px;cursor:pointer}
-.primary{background:#fff;color:#111;font-weight:800}
-.secondary{background:#333;color:#fff}
-.status{color:#777;font-size:clamp(9px,1.6vh,12px);margin:0}
-@media(max-width:520px){
-  body{padding:8px}
-  .wrap{width:98vw;height:calc(100vh - 16px)}
-  .panel{padding-left:10px;padding-right:10px}
+html{background:#111}
+body{
+  margin:0;
+  min-height:100%;
+  background:#111;
+  color:#fff;
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
-@media(max-height:700px){
-  h1{font-size:clamp(23px,5vh,34px)}
-  .sub{font-size:clamp(11px,2.2vh,16px)}
-  .panel{padding-top:6px;padding-bottom:6px}
-  .beat{height:clamp(88px,15vh,115px)}
-  .num{font-size:clamp(30px,5vh,42px)}
-  .slot{height:24px;font-size:22px}
+.wrap{
+  width:min(96vw,760px);
+  margin:0 auto;
+  padding:clamp(22px,4vh,42px) 0 calc(42px + env(safe-area-inset-bottom));
+}
+h1{
+  margin:0;
+  text-align:center;
+  font-size:clamp(30px,5.8vw,58px);
+  line-height:1.05;
+  font-weight:800;
+  letter-spacing:-.04em;
+}
+.sub{
+  margin:18px 0 28px;
+  text-align:center;
+  color:#aaa;
+  font-size:clamp(16px,3.2vw,30px);
+}
+.panel{
+  background:#1d1d1d;
+  border-radius:28px;
+  padding:30px 24px 26px;
+}
+.bpm-title{
+  text-align:center;
+  font-size:clamp(25px,4.8vw,42px);
+  font-weight:800;
+  margin-bottom:16px;
+}
+input[type=range]{
+  display:block;width:88%;margin:0 auto 22px;
+  accent-color:#4d8df7;
+}
+.bpm-number{
+  width:210px;max-width:70%;margin:0 auto 22px;
+  padding:14px 10px;
+  border:4px solid #555;border-radius:20px;
+  background:#2b2b2b;text-align:center;
+  font-size:clamp(28px,5vw,42px);
+}
+.modes{
+  display:flex;justify-content:center;gap:42px;flex-wrap:wrap;
+  font-size:clamp(17px,3.2vw,29px);
+}
+.mode{display:flex;align-items:center;gap:12px;cursor:pointer}
+.mode input{appearance:none;width:38px;height:38px;border-radius:50%;background:#fff;border:2px solid #aaa;margin:0}
+.mode input:checked{background:#4d8df7;border-color:#4d8df7;box-shadow:inset 0 0 0 10px #4d8df7}
+.mode input:checked:after{content:"";display:block;width:10px;height:10px;margin:12px auto;background:#fff;border-radius:50%}
+.ready{
+  text-align:center;font-size:clamp(56px,10vw,92px);
+  font-weight:900;margin:34px 0 26px;
+}
+.grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;margin-bottom:24px;
+}
+.card{
+  height:180px;
+  min-height:0;background:#242424;border:5px solid #333;border-radius:26px;
+  padding:28px 18px 20px;display:flex;flex-direction:column;
+  justify-content:space-between;align-items:center;
+}
+.card-num{font-size:clamp(44px,7vw,66px);font-weight:800}
+.beats{width:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.beat{
+  min-width:0;text-align:center;font-size:clamp(28px,5vw,44px);
+  font-weight:800;line-height:1;color:#70bdf0;
+}
+.beat.strong{color:#ff7373}
+.buttons{
+  display:flex;justify-content:center;gap:16px;flex-wrap:wrap;
+  padding-bottom:12px;
+}
+button{
+  border:0;border-radius:18px;padding:18px 28px;
+  font-size:clamp(20px,3.6vw,30px);font-weight:800;
+  background:#333;color:#fff;cursor:pointer;
+  touch-action:manipulation;
+}
+button.primary{background:#fff;color:#111}
+button:disabled{opacity:.45}
+.note{text-align:center;color:#777;font-size:14px;margin-top:10px}
+@media(max-width:520px){
+  .wrap{padding-top:26px}
+  .panel{padding:24px 16px 22px;border-radius:24px}
+  .grid{gap:12px}
+  .card{height:165px;min-height:0;border-radius:22px;padding:22px 12px 18px}
+  .modes{gap:18px}
+  .mode input{width:32px;height:32px}
+  .mode input:checked:after{margin:9px auto}
+}
+@media(max-width:390px){
+  .card{height:155px;min-height:0}
+  button{padding:15px 20px}
 }
 </style>
+
+<style>
+@media (max-width:520px){
+  .wrap{
+    width:94vw;
+    padding:14px 0 calc(12px + env(safe-area-inset-bottom));
+  }
+  h1{
+    font-size:clamp(28px,7.4vw,36px);
+    line-height:1;
+  }
+  .sub{
+    margin:8px 0 12px;
+    font-size:15px;
+    line-height:1.2;
+  }
+  .panel{
+    padding:15px 14px 13px;
+    border-radius:20px;
+  }
+  .bpm-title{
+    font-size:25px;
+    margin-bottom:8px;
+  }
+  input[type=range]{
+    width:90%;
+    margin:0 auto 10px;
+  }
+  .bpm-number{
+    width:145px;
+    max-width:48%;
+    padding:7px 8px;
+    margin:0 auto 10px;
+    border-width:3px;
+    border-radius:14px;
+    font-size:28px;
+  }
+  .modes{
+    gap:18px;
+    font-size:15px;
+    flex-wrap:nowrap;
+  }
+  .mode{
+    gap:7px;
+    white-space:nowrap;
+  }
+  .mode input{
+    width:25px;
+    height:25px;
+    flex:none;
+  }
+  .mode input:checked:after{
+    width:7px;height:7px;margin:7px auto;
+  }
+  .ready{
+    font-size:58px;
+    line-height:1;
+    margin:18px 0 14px;
+  }
+  .grid{
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .card{
+    height:118px;
+    min-height:0;
+    border-width:4px;
+    border-radius:18px;
+    padding:10px 9px 9px;
+  }
+  .card-num{
+    font-size:42px;
+    line-height:1;
+  }
+  .beats{
+    gap:5px;
+  }
+  .beat{
+    font-size:27px;
+    line-height:1;
+  }
+  .buttons{
+    gap:8px;
+    padding-bottom:0;
+    flex-wrap:nowrap;
+  }
+  button{
+    padding:10px 14px;
+    border-radius:13px;
+    font-size:17px;
+    white-space:nowrap;
+  }
+  .note{
+    margin-top:7px;
+    font-size:11px;
+    line-height:1.2;
+  }
+}
+</style>
+
 </head>
 <body>
-<div class="wrap">
+<main class="wrap">
+  <h1>🥁 드럼 강약 연습기</h1>
+  <div class="sub">1 · 2 · 3 · 4 박자에 맞춰 강 / 약을 반복합니다.</div>
 
-<h1>🥁 드럼 강약 연습기</h1>
-<div class="sub">1 · 2 · 3 · 4 박자에 맞춰 강 / 약을 반복합니다.</div>
-
-<div class="panel">
-  <div class="bpm-title">BPM</div>
-  <div class="bpm">
-    <input id="bpmRange" type="range" min="40" max="220" value="80">
-    <input id="bpmNumber" type="number" min="40" max="220" value="80">
-    <div class="mode">
-      <label><input type="radio" name="mode" value="fixed" checked> 같은 패턴 반복</label>
-      <label><input type="radio" name="mode" value="random"> 매 마디 랜덤</label>
+  <section class="panel">
+    <div class="bpm-title">BPM</div>
+    <input id="bpm" type="range" min="40" max="180" value="110">
+    <div id="bpmNumber" class="bpm-number">110</div>
+    <div class="modes">
+      <label class="mode"><input type="radio" name="mode" value="repeat" checked>같은 패턴 반복</label>
+      <label class="mode"><input type="radio" name="mode" value="random">매 마디 랜덤</label>
     </div>
-  </div>
-</div>
+  </section>
 
-<div id="current">READY</div>
+  <div id="status" class="ready">READY</div>
 
-<!-- JS가 실행되지 않는 미리보기에서도 4개의 박스와 4칸이 보이도록 HTML에 직접 배치 -->
-<div id="beats" class="beats">
-  <div class="beat" id="beat0">
-    <div class="num">1</div>
-    <div class="slots">
-      <div class="slot strong">&lt;</div><div class="slot weak">_</div>
-      <div class="slot weak">_</div><div class="slot weak">_</div>
-    </div>
-  </div>
-  <div class="beat" id="beat1">
-    <div class="num">2</div>
-    <div class="slots">
-      <div class="slot strong">&lt;</div><div class="slot weak">_</div>
-      <div class="slot weak">_</div><div class="slot weak">_</div>
-    </div>
-  </div>
-  <div class="beat" id="beat2">
-    <div class="num">3</div>
-    <div class="slots">
-      <div class="slot strong">&lt;</div><div class="slot weak">_</div>
-      <div class="slot weak">_</div><div class="slot weak">_</div>
-    </div>
-  </div>
-  <div class="beat" id="beat3">
-    <div class="num">4</div>
-    <div class="slots">
-      <div class="slot strong">&lt;</div><div class="slot weak">_</div>
-      <div class="slot weak">_</div><div class="slot weak">_</div>
-    </div>
-  </div>
-</div>
+  <section id="grid" class="grid">
+  <div class="card"><div class="card-num">1</div><div class="beats"><div class="beat strong">&lt;</div><div class="beat">_</div><div class="beat">_</div><div class="beat">_</div></div></div>
+  <div class="card"><div class="card-num">2</div><div class="beats"><div class="beat strong">&lt;</div><div class="beat">_</div><div class="beat">_</div><div class="beat">_</div></div></div>
+  <div class="card"><div class="card-num">3</div><div class="beats"><div class="beat strong">&lt;</div><div class="beat">_</div><div class="beat">_</div><div class="beat">_</div></div></div>
+  <div class="card"><div class="card-num">4</div><div class="beats"><div class="beat strong">&lt;</div><div class="beat">_</div><div class="beat">_</div><div class="beat">_</div></div></div>
+</section>
 
-<div class="controls">
-<button id="startBtn" class="primary">▶ 시작</button>
-<button id="stopBtn" class="secondary">■ 정지</button>
-<button id="newBtn" class="secondary">↻ 새 패턴</button>
-</div>
-
-<div class="status">&lt; = 강 · _ = 약</div>
-
-</div>
+  <div class="buttons">
+    <button id="start" class="primary">▶ 시작</button>
+    <button id="stop">■ 정지</button>
+    <button id="new">↻ 새 패턴</button>
+  </div>
+  <div class="note">각 박자는 4분음표 4칸으로 표시됩니다. &lt; = 강 · _ = 약</div>
+</main>
 
 <script>
-const bpmRange=document.getElementById('bpmRange');
+const bpmEl=document.getElementById('bpm');
 const bpmNumber=document.getElementById('bpmNumber');
-const currentEl=document.getElementById('current');
+const grid=document.getElementById('grid');
+const statusEl=document.getElementById('status');
+const startBtn=document.getElementById('start');
+const stopBtn=document.getElementById('stop');
+const newBtn=document.getElementById('new');
 
 let pattern=[];
-let stepIndex=0;
 let timer=null;
+let running=false;
+let step=0;
 let audioCtx=null;
 
 function makePattern(){
-  pattern=Array.from({length:4},()=>Array.from({length:4},(_,sub)=>{
-    if(sub===0)return 'strong';
-    return Math.random()<0.35?'strong':'weak';
-  }));
+  pattern=Array.from({length:4},()=>Array.from({length:4},(_,i)=>i===0));
+  for(let bar=0;bar<4;bar++){
+    for(let i=0;i<4;i++){
+      if(Math.random()<0.35) pattern[bar][i]=true;
+    }
+    pattern[bar][0]=true;
+  }
   render();
 }
-
-function render(){
-  pattern.forEach((beat,beatNo)=>{
-    const box=document.getElementById('beat'+beatNo);
-    const slots=box.querySelectorAll('.slot');
-    beat.forEach((type,i)=>{
-      slots[i].className='slot '+type;
-      slots[i].textContent=type==='strong'?'<':'_';
+function render(activeBar=-1,activeBeat=-1){
+  grid.innerHTML='';
+  pattern.forEach((bar,b)=>{
+    const card=document.createElement('div');
+    card.className='card';
+    const num=document.createElement('div');
+    num.className='card-num'; num.textContent=b+1;
+    const beats=document.createElement('div'); beats.className='beats';
+    bar.forEach((strong,i)=>{
+      const x=document.createElement('div');
+      x.className='beat'+(strong?' strong':'');
+      x.textContent=strong?'&lt;':'_';
+      x.innerHTML=strong?'&lt;':'_';
+      if(b===activeBar && i===activeBeat){
+        x.style.transform='scale(1.22)';
+        x.style.filter='brightness(1.35)';
+      }
+      beats.appendChild(x);
     });
+    card.append(num,beats); grid.appendChild(card);
   });
 }
-
-async function ensureAudio(){
-  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-  if(audioCtx.state==='suspended') await audioCtx.resume();
+function ensureAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
 }
-
-async function clickSound(type){
-  await ensureAudio();
-  const osc=audioCtx.createOscillator();
-  const gain=audioCtx.createGain();
-  osc.type='square';
-  osc.frequency.value=type==='strong'?1200:650;
-  gain.gain.setValueAtTime(type==='strong'?0.75:0.24,audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.055);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime+0.065);
+function clickSound(strong){
+  ensureAudio();
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type='sine';
+  o.frequency.value=strong?180:120;
+  g.gain.setValueAtTime(0.0001,audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(strong?0.22:0.12,audioCtx.currentTime+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+0.09);
+  o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.1);
 }
-
-async function playStep(){
-  document.querySelectorAll('.beat').forEach(x=>x.classList.remove('active'));
-  const beatNo=Math.floor(stepIndex/4);
-  const subNo=stepIndex%4;
-  const type=pattern[beatNo][subNo];
-  document.getElementById('beat'+beatNo).classList.add('active');
-  currentEl.textContent=(beatNo+1)+' · '+(subNo+1);
-  await clickSound(type);
-  stepIndex++;
-  if(stepIndex>=16){
-    stepIndex=0;
-    if(document.querySelector('input[name="mode"]:checked').value==='random') makePattern();
-  }
+function tick(){
+  const bar=Math.floor(step/4)%4, beat=step%4;
+  render(bar,beat);
+  clickSound(pattern[bar][beat]);
+  step++;
 }
-
-async function start(){
-  stop(false);
-  await ensureAudio();
-  stepIndex=0;
-  await playStep();
-  timer=setInterval(playStep,(60000/Number(bpmNumber.value))/4);
+function start(){
+  if(running)return;
+  ensureAudio();
+  running=true; step=0; statusEl.textContent='PLAY';
+  const ms=60000/Number(bpmEl.value);
+  tick(); timer=setInterval(tick,ms);
 }
-
-function stop(reset=true){
-  if(timer){clearInterval(timer);timer=null;}
-  if(reset){
-    document.querySelectorAll('.beat').forEach(x=>x.classList.remove('active'));
-    currentEl.textContent='READY';
-  }
+function stop(){
+  running=false; clearInterval(timer); timer=null; statusEl.textContent='READY'; render();
 }
-
-function syncBpm(v){
-  v=Math.max(40,Math.min(220,Number(v)||80));
-  bpmRange.value=v; bpmNumber.value=v;
-  if(timer) start();
+function newPattern(){
+  if(running) stop();
+  makePattern();
 }
+bpmEl.addEventListener('input',()=>{
+  bpmNumber.textContent=bpmEl.value;
+  if(running){stop();start();}
+});
+startBtn.addEventListener('click',start);
+stopBtn.addEventListener('click',stop);
+newBtn.addEventListener('click',newPattern);
 
-bpmRange.addEventListener('input',e=>syncBpm(e.target.value));
-bpmNumber.addEventListener('change',e=>syncBpm(e.target.value));
-document.getElementById('startBtn').addEventListener('click',start);
-document.getElementById('stopBtn').addEventListener('click',()=>stop(true));
-document.getElementById('newBtn').addEventListener('click',()=>{stop(true);makePattern();});
 makePattern();
 </script>
 </body>
