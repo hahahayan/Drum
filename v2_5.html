@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="version" content="v3.1-seamless-mode-switch-20260822">
+<title>드럼 리듬 연습기 v3.0</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#101010;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
+.app{width:94vw;max-width:900px;margin:auto;padding:14px 0 24px}
+h1{text-align:center;margin:0;font-size:clamp(28px,6vw,52px);font-weight:900;letter-spacing:-2px}
+.sub{text-align:center;color:#aaa;margin:6px 0 14px;font-size:clamp(13px,2.5vw,20px)}
+.panel{background:#1d1d1d;border-radius:24px;padding:14px 28px;margin-bottom:8px}
+.bpmTitle{text-align:center;font-size:34px;font-weight:900}
+#bpm{width:100%;accent-color:#4d8df5}
+.bpm{width:330px;max-width:62%;height:70px;margin:5px auto 12px;border:6px solid #555;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:50px}
+.modes{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.mode{display:flex;align-items:center;gap:10px;font-size:clamp(17px,3vw,27px)}
+.mode input{appearance:none;width:30px;height:30px;margin:0;border-radius:50%;border:5px solid #aaa;background:#fff}
+.mode input:checked{border:9px solid #4d8df5}
+.modeBtn{background:transparent;border:0;color:#fff;padding:7px 4px;font-size:clamp(17px,3vw,27px);font-weight:800;display:flex;align-items:center;gap:10px;cursor:pointer}
+.modeBtn .dot{width:30px;height:30px;border-radius:50%;border:5px solid #aaa;background:#fff;display:inline-block;flex:0 0 auto}
+.modeBtn.active{color:#78aaff}
+.modeBtn.active .dot{background:#fff;border:9px solid #4d8df5}
+.modeBtn:focus-visible{outline:2px solid #78aaff;outline-offset:3px}
+#status{text-align:center;font-size:clamp(58px,10vw,94px);font-weight:900;line-height:1;margin:8px 0}
+.row{height:160px;background:#242424;border:5px solid #303030;border-radius:20px;padding:8px;overflow:hidden}
+.nextRowWrap{display:none;margin-top:8px}.nextRowTitle{display:none}.previewWrap{display:none;margin-top:8px}
+.previewTitle{text-align:left;color:#aaa;font-size:14px;font-weight:800;margin:0 0 4px 8px}
+.previewRow{height:112px;background:#1b1b1b;border:3px solid #303030;border-radius:16px;padding:6px;overflow:hidden}
+.nextRow .beat{opacity:1}.previewRow .beat{opacity:.62}
+.previewRow svg{height:92px}
+.measure{height:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.beat{min-width:0;border-left:2px solid #353535;display:flex;align-items:center;justify-content:center;padding:0 2px}
+.beat:first-child{border-left:0}
+svg{width:100%;height:130px;display:block;overflow:visible}
+.note{fill:#78c5ff}
+.stem,.beam,.flag{stroke:#78c5ff;stroke-width:5;stroke-linecap:round;fill:none}
+.restGlyph{fill:none;stroke:#f0f0f0;stroke-width:5.5;stroke-linecap:round;stroke-linejoin:round}.restSolid{fill:#f0f0f0;stroke:none}.restDot{fill:#f0f0f0}
+.beat.active{border:4px solid #4d8df5 !important;border-radius:10px;box-shadow:0 0 0 1px #4d8df5 inset;transform:scale(.98);position:relative;z-index:3}
+.accent{fill:#ff7474;font-size:22px;font-weight:900}
+.label{fill:#f0f0f0;font-size:18px;font-weight:900}
+.rest{stroke:#f0f0f0;fill:none;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}.restDot{fill:#f0f0f0}
+.restFill{fill:#f0f0f0}.restNote{fill:#f0f0f0}.restStem,.restBeam{stroke:#f0f0f0;stroke-width:5;stroke-linecap:round}.restDot{fill:#f0f0f0}.tuplet{stroke:#f0f0f0;stroke-width:3;stroke-linecap:round}
+.controls{display:flex;justify-content:center;gap:10px;margin-top:8px}
+button{border:0;border-radius:18px;padding:10px 18px;background:#303030;color:#fff;font-size:clamp(18px,3vw,26px);font-weight:800}
+button.primary{background:#fff;color:#111}
+button.pressed{filter:brightness(.45);transform:scale(.97);transition:filter .05s,transform .05s}
+.help{text-align:center;color:#888;font-size:clamp(12px,2vw,17px);line-height:1.4;margin-top:7px}
+@media(max-width:700px){.panel{padding:10px 15px}.bpmTitle{font-size:27px}.bpm{height:62px;font-size:43px}.row{height:140px}.nextRow{height:140px}svg{height:112px}.previewRow{height:94px}.previewRow svg{height:78px}}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>🥁 드럼 리듬 연습기 v2</h1>
+<div class="sub">한 줄이 4박 한 마디입니다. 음표 · 쉼표 · 삼연음 · 6연음을 랜덤하게 연습합니다.</div>
+
+<section class="panel">
+<div class="bpmTitle">BPM</div>
+<input id="bpm" type="range" min="40" max="180" value="80">
+<div class="bpm" id="bpmValue">80</div>
+<div class="modes">
+<button type="button" class="modeBtn active" id="sameBtn"><span class="dot"></span><span>같은 패턴 반복</span></button>
+<button type="button" class="modeBtn" id="randomBtn"><span class="dot"></span><span>매 마디 랜덤</span></button>
+</div>
+</section>
+
+<div id="status">READY</div>
+
+<!-- JS가 실행되지 않아도 이 안의 첫 패턴은 그대로 보입니다. -->
+<div class="row"><div class="measure" id="measure">
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="78" cy="94" rx="15" ry="9" transform="rotate(-18 78 94)"/>
+<line class="stem" x1="91" y1="92" x2="91" y2="42"/>
+<text class="accent" x="91" y="28" text-anchor="middle">&gt;</text>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="55" cy="94" rx="14" ry="8"/>
+<ellipse class="note" cx="113" cy="94" rx="14" ry="8"/>
+<line class="stem" x1="68" y1="92" x2="68" y2="45"/>
+<line class="stem" x1="126" y1="92" x2="126" y2="45"/>
+<line class="beam" x1="68" y1="45" x2="126" y2="45"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<line class="rest" x1="34" y1="34" x2="66" y2="34" stroke-width="3"/>
+<line class="rest" x1="114" y1="34" x2="146" y2="34" stroke-width="3"/>
+<text class="label" x="90" y="40" text-anchor="middle">3</text>
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="90" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="50"/>
+<line class="stem" x1="102" y1="92" x2="102" y2="50"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="50"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="76" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="104" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="48"/>
+<line class="stem" x1="88" y1="92" x2="88" y2="48"/>
+<line class="stem" x1="116" y1="92" x2="116" y2="48"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="48" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="58" x2="144" y2="58"/>
+</svg>
+</div>
+</div></div>
+<div class="nextRowWrap" id="nextRowWrap">
+  <div class="row nextRow"><div class="measure" id="nextMeasure"></div></div>
+</div>
+<div class="previewWrap" id="previewWrap">
+  <div class="previewTitle">다음 마디 미리보기</div>
+  <div class="previewRow"><div class="measure" id="previewMeasure"></div></div>
+</div>
+
+<div class="controls">
+<button type="button" class="primary" id="start">▶ 시작</button>
+<button type="button" id="stop">■ 정지</button>
+<button type="button" id="new">↻ 새 패턴</button>
+</div>
+<div class="help">한 줄 = 4박(한 마디). 같은 패턴 반복은 한 마디를 계속 반복합니다. 매 마디 랜덤은 두 줄을 번갈아 진행하며 다음 마디가 자동으로 채워집니다. 쉼 표시에는 강세를 붙이지 않습니다. 4분 · 8분 · 16분 · 혼합음가 · 쉼 표시 · 가끔 16분음표 8개 연속 · 드물게 3연음 · 6연음이 나옵니다.</div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const measure=document.getElementById("measure");
+const sameBtn=document.getElementById("sameBtn");
+const randomBtn=document.getElementById("randomBtn");
+let randomMode=false;
+const newBtn=document.getElementById("new");
+const startBtn=document.getElementById("start");
+const stopBtn=document.getElementById("stop");
+const bpm=document.getElementById("bpm");
+const bpmValue=document.getElementById("bpmValue");
+const status=document.getElementById("status");
+const BPM_STORAGE_KEY="drum-rhythm-v2-bpm";
+const savedBpm=Number(localStorage.getItem(BPM_STORAGE_KEY));
+if(Number.isFinite(savedBpm) && savedBpm>=40 && savedBpm<=180){ bpm.value=String(savedBpm); bpmValue.textContent=String(savedBpm); } else { bpm.value="60"; bpmValue.textContent="60"; }
+
+const previewWrap=document.getElementById("previewWrap");
+const previewMeasure=document.getElementById("previewMeasure");
+const nextRowWrap=document.getElementById("nextRowWrap");
+const nextMeasure=document.getElementById("nextMeasure");
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+const TYPES=["q","e","s","t","x","xr","r4","r8","r16","re","er","tr","mix","f32","mix32"];
+const WEIGHTS=[17.0,23.0,20.0,1.2,0.7,0.9,10.0,9.0,9.0,9.0,9.0,1.2,11.0,1.0,3.0];
+let current=null,nextPattern=null,timer=null,running=false,audio=null,beatTimers=[],activeRow=0,audioSources=[];
+function weightedType(){let total=WEIGHTS.reduce((a,b)=>a+b,0),r=Math.random()*total;for(let i=0;i<TYPES.length;i++){r-=WEIGHTS[i];if(r<0)return TYPES[i]}return TYPES[0]}
+function unitsForType(type){
+  if(type==='q') return [{d:1}];
+  if(type==='e') return [{d:.5},{d:.5}];
+  if(type==='s') return [{d:.25},{d:.25},{d:.25},{d:.25}];
+  // 한 박 안에 32분음표 8개 = 각 음가 1/8박
+  if(type==='f32') return Array.from({length:8},()=>({d:.125,thirtysecond:true}));
+  // 32분음표를 다른 음가와 섞은 한 박 패턴도 랜덤에 포함한다.
+  if(type==='mix32'){
+    const choices=[
+      [{d:.125,mixed32:true},{d:.125,mixed32:true},{d:.25,mixed32:true},{d:.5,mixed32:true}],
+      [{d:.125,mixed32:true},{d:.25,mixed32:true},{d:.125,mixed32:true},{d:.5,mixed32:true}],
+      [{d:.5,mixed32:true},{d:.125,mixed32:true},{d:.125,mixed32:true},{d:.25,mixed32:true}],
+      [{d:.25,mixed32:true},{d:.125,mixed32:true},{d:.125,mixed32:true},{d:.25,mixed32:true},{d:.25,mixed32:true}],
+      [{d:.5,mixed32:true},{d:.25,mixed32:true},{d:.125,mixed32:true},{d:.125,mixed32:true}],
+      [{d:.125,mixed32:true},{d:.125,mixed32:true},{d:.5,mixed32:true},{d:.125,mixed32:true},{d:.125,mixed32:true}]
+    ];
+    return choices[Math.floor(Math.random()*choices.length)].map(u=>({...u}));
+  }
+  if(type==='t') return Array.from({length:3},()=>({d:1/3,triplet:true}));
+  if(type==='x') return Array.from({length:6},()=>({d:1/6,sext:true}));
+  if(type==='xr'){
+    const units=Array.from({length:6},()=>({d:1/6,sext:true}));
+    const restCount=Math.random()<0.72?1:2;
+    shuffle(Array.from({length:6},(_,i)=>i)).slice(0,restCount).forEach(i=>units[i].rest=true);
+    return units;
+  }
+  if(type==='r4') return [{d:1,rest:true}];
+  if(type==='r8') return [{d:.5,rest:true},{d:.5,rest:true}];
+  if(type==='r16') return Array.from({length:4},()=>({d:.25,rest:true}));
+  if(type==='re') return [{d:.5,rest:true},{d:.5}];
+  if(type==='er') return [{d:.5},{d:.5,rest:true}];
+  if(type==='tr'){ const units=Array.from({length:3},()=>({d:1/3,triplet:true})); units[Math.floor(Math.random()*3)].rest=true; return units; }
+  return [{d:1}];
+}
+function mixedUnits(){
+  const choices=[
+    [{d:.25,mixed:true},{d:.5,mixed:true},{d:.25,mixed:true}],
+    [{d:.5,mixed:true},{d:.25,mixed:true},{d:.25,mixed:true}],
+    [{d:.25,mixed:true},{d:.25,mixed:true},{d:.5,mixed:true}],
+    [{d:.125,mixed:true},{d:.125,mixed:true},{d:.25,mixed:true},{d:.5,mixed:true}],
+    [{d:.5,mixed:true},{d:.125,mixed:true},{d:.125,mixed:true},{d:.25,mixed:true}],
+    [{d:.25,mixed:true},{d:.125,mixed:true},{d:.125,mixed:true},{d:.5,mixed:true}]
+  ];
+  return choices[Math.floor(Math.random()*choices.length)].map(u=>({...u}));
+}
+
+function countHits(type){return unitsForType(type).filter(u=>!u.rest).length}
+function makePattern(){
+  const p=[]; let i=0;
+  while(i<4){
+    if(i<3 && Math.random()<0.09){
+      p.push({type:'s8a',units:Array.from({length:4},()=>({d:.25,six8:true})),accents:[]});
+      p.push({type:'s8b',units:Array.from({length:4},()=>({d:.25,six8:true})),accents:[]});
+      i+=2; continue;
+    }
+    let type=weightedType(), units=unitsForType(type);
+    if(type==='mix') units=mixedUnits();
+
+    // 쉼표가 너무 드물지 않도록 일반 패턴 일부를 쉼표 포함 박으로 변환.
+    if((type==='q' || type==='e' || type==='s' || type==='mix') && Math.random()<0.18){
+      const restVariants=[
+        {type:'re',units:unitsForType('re')},
+        {type:'er',units:unitsForType('er')},
+        {type:'r8',units:unitsForType('r8')},
+        {type:'r16',units:unitsForType('r16')}
+      ];
+      const rv=restVariants[Math.floor(Math.random()*restVariants.length)];
+      type=rv.type; units=rv.units;
+    }
+
+    p.push({type,units,accents:[]}); i++;
+  }
+  p.forEach(b=>{ const n=b.units.filter(u=>!u.rest).length; if(n>0){ const k=Math.floor(Math.random()*(n+1)); b.accents=shuffle(Array.from({length:n},(_,i)=>i)).slice(0,k).sort((a,b)=>a-b); }});
+  return p;
+}
+
+function key(p){return JSON.stringify(p)}
+function makeDifferent(exclude){let p;do{p=makePattern()}while(key(p)===exclude);return p}
+current=makePattern();nextPattern=makeDifferent(key(current));
+// 랜덤 모드의 두 줄은 위치를 절대 바꾸지 않는다.
+// rowPatterns[0] = 화면 첫 번째 줄, rowPatterns[1] = 화면 두 번째 줄.
+let rowPatterns=[current,nextPattern];
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function rest(type,x=90){
+  // 간단한 연습용 표기:
+  // 8분쉼표 = 왼쪽 아래로 기운 한 줄 + 위쪽 작은 작대기 1개
+  // 16분쉼표 = 같은 줄 + 작은 작대기 2개
+  const common = `
+    <line x1="48" y1="8" x2="34" y2="58"
+          stroke="currentColor" stroke-width="5"
+          stroke-linecap="round"/>
+  `;
+  if(type==='r32'){
+    return `<g transform="translate(${x-18},24)" class="restGlyph">
+      <line x1="48" y1="8" x2="34" y2="58"
+            stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+      <line x1="45" y1="9" x2="54" y2="9"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <line x1="42" y1="19" x2="51" y2="19"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <line x1="39" y1="29" x2="48" y2="29"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    </g>`;
+  }
+  if(type==='r16'){
+    return `<g transform="translate(${x-18},24)" class="restGlyph">
+      ${common}
+      <line x1="45" y1="10" x2="54" y2="10"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+      <line x1="42" y1="20" x2="51" y2="20"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    </g>`;
+  }
+  if(type==='r8'){
+    return `<g transform="translate(${x-18},24)" class="restGlyph">
+      ${common}
+      <line x1="45" y1="10" x2="54" y2="10"
+            stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+    </g>`;
+  }
+  // 4분쉼표는 기존 모양 유지.
+  return `<g transform="translate(${x-18},22)" class="restGlyph">
+    <path d="M34 3 L48 3 L40 17 L27 27 L43 38 L34 49 L47 58"/>
+  </g>`;
+}
+
+function noteAt(x,accent=false,d=.25,showFlags=true){
+  const stemX=x+9;
+  let out=`<ellipse class="note" cx="${x-4}" cy="94" rx="14" ry="8" transform="rotate(-18 ${x-4} 94)"/>`;
+  out+=`<line class="stem" x1="${stemX}" y1="92" x2="${stemX}" y2="45"/>`;
+
+  // 빔으로 연결되는 음표는 꼬리를 따로 그리지 않는다.
+  // 빔이 없는 단독 8분/16분음표만 꼬리를 표시한다.
+  if(showFlags && d===.5){
+    out+=`<path class="flag" d="M${stemX} 45 C${stemX+18} 47 ${stemX+20} 56 ${stemX+9} 63"/>`;
+  }else if(showFlags && d===.25){
+    out+=`<path class="flag" d="M${stemX} 45 C${stemX+18} 47 ${stemX+20} 56 ${stemX+9} 63"/>`;
+    out+=`<path class="flag" d="M${stemX} 54 C${stemX+16} 56 ${stemX+18} 65 ${stemX+9} 72"/>`;
+  }else if(showFlags && d===.125){
+    out+=`<path class="flag" d="M${stemX} 45 C${stemX+18} 47 ${stemX+20} 56 ${stemX+9} 63"/>`;
+    out+=`<path class="flag" d="M${stemX} 54 C${stemX+16} 56 ${stemX+18} 65 ${stemX+9} 72"/>`;
+    out+=`<path class="flag" d="M${stemX} 63 C${stemX+14} 65 ${stemX+16} 73 ${stemX+9} 79"/>`;
+  }
+
+  if(accent) out+=`<text class="accent" x="${stemX}" y="6" text-anchor="middle">&gt;</text>`;
+  return out;
+}
+function drawUnits(units,accents=[]){
+  // 한 박 전체가 쉼이면 어떤 내부 분할이었든 표시는 항상 4분쉼표 하나.
+  if(units.length>0 && units.every(u=>u.rest)){
+    return rest('r4',90);
+  }
+
+  // 한 박에서 실제 소리가 시작점에 한 번만 나는 경우에는
+  // 분할 표기를 없애고 4분음표 하나로 통일한다.
+  const hitIndexes=units.map((u,i)=>u.rest?null:i).filter(i=>i!==null);
+  if(hitIndexes.length===1 && hitIndexes[0]===0){
+    const u=units[0];
+    const total=units.reduce((s,v)=>s+v.d,0);
+    if(Math.abs(total-1)<1e-9){
+      const oneAccent=accents.length>0;
+      return noteAt(90,oneAccent,1,false);
+    }
+  }
+
+  const positions=[]; let cursor=28;
+  units.forEach((u,i)=>{
+    positions.push({x:cursor,w:u.d*124,u,i});
+    cursor+=u.d*124;
+  });
+
+  // 인접한 8분/16분음표가 실제 빔으로 연결되는지 먼저 계산한다.
+  const beamed=new Set();
+  for(let i=0;i<positions.length-1;i++){
+    const a=positions[i], b=positions[i+1];
+    if(!a.u.rest && !b.u.rest && a.u.d<=.5 && b.u.d<=.5){
+      beamed.add(i);
+      beamed.add(i+1);
+    }
+  }
+
+  let body='';
+  let noteOrdinal=0;
+  positions.forEach(o=>{
+    const x=o.x+o.w/2;
+    if(o.u.rest){
+      const rt=o.u.sext?'r16':(o.u.d===1?'r4':(o.u.d<=.25?'r16':'r8'));
+      body+=rest(rt,x);
+      return;
+    }
+    body+=noteAt(x,accents.includes(noteOrdinal),o.u.d,!beamed.has(o.i));
+    noteOrdinal++;
+  });
+
+  // 1차 빔: 인접한 8/16분음표를 연결하되 쉼표에서 끊는다.
+  for(let i=0;i<positions.length-1;i++){
+    const a=positions[i], b=positions[i+1];
+    if(a.u.rest||b.u.rest) continue;
+    if(a.u.d<=.5 && b.u.d<=.5){
+      body+=`<line class="beam" x1="${a.x+a.w/2+9}" y1="48" x2="${b.x+b.w/2+9}" y2="48"/>`;
+    }
+  }
+
+  // 2차 빔: 16분음표에 추가.
+  positions.forEach((o,i)=>{
+    if(o.u.rest || o.u.d>.25) return;
+    const stem=o.x+o.w/2+9;
+    const prev=positions[i-1], next=positions[i+1];
+    let left=stem,right=stem;
+    if(prev && !prev.u.rest && prev.u.d<=.5) left=(prev.x+prev.w/2+9+stem)/2;
+    if(next && !next.u.rest && next.u.d<=.5) right=(stem+next.x+next.w/2+9)/2;
+    if(right>stem || left<stem){
+      body+=`<line class="beam" x1="${left}" y1="58" x2="${right}" y2="58"/>`;
+    }
+  });
+
+  // 3차 빔: 32분음표에 추가. 한 박의 8개를 세 줄의 빔으로 연결.
+  positions.forEach((o,i)=>{
+    if(o.u.rest || o.u.d>.125) return;
+    const stem=o.x+o.w/2+9;
+    const prev=positions[i-1], next=positions[i+1];
+    let left=stem,right=stem;
+    if(prev && !prev.u.rest && prev.u.d<=.25) left=(prev.x+prev.w/2+9+stem)/2;
+    if(next && !next.u.rest && next.u.d<=.25) right=(stem+next.x+next.w/2+9)/2;
+    if(right>stem || left<stem){
+      body+=`<line class="beam" x1="${left}" y1="68" x2="${right}" y2="68"/>`;
+    }
+  });
+
+  // 쉼표가 포함되어도 3연음/6연음 묶음표시는 유지.
+  if(units.length===3 && units.every(u=>u.triplet===true)){
+    body+=`<line class="tuplet" x1="28" y1="24" x2="60" y2="24"/>
+            <line class="tuplet" x1="120" y1="24" x2="152" y2="24"/>
+            <text class="label" x="90" y="30" text-anchor="middle">3</text>`;
+  }
+  if(units.length===6 && units.every(u=>u.sext===true)){
+    body+=`<line class="tuplet" x1="14" y1="24" x2="48" y2="24"/>
+            <line class="tuplet" x1="132" y1="24" x2="166" y2="24"/>
+            <text class="label" x="90" y="30" text-anchor="middle">6</text>`;
+  }
+  return body;
+}
+function beatData(b){return b.units || unitsForType(b.type)}
+function beat(b){return `<svg viewBox="0 0 180 130" aria-label="박">${drawUnits(beatData(b),b.accents||[])}</svg>`}
+function render(p,target=measure){target.innerHTML=p.map(b=>`<div class="beat">${beat(b)}</div>`).join("")}
+function renderPreview(p){previewMeasure.innerHTML=p.map(b=>`<div class="beat">${beat(b)}</div>`).join("")}
+function renderNext(p){nextMeasure.innerHTML=p.map(b=>`<div class="beat">${beat(b)}</div>`).join("")}
+function refreshPreview(){
+  previewWrap.style.display="none";
+  nextRowWrap.style.display=randomMode?"block":"none";
+  if(randomMode)renderNext(rowPatterns[1]);
+}
+render(current);renderNext(nextPattern);refreshPreview();
+bpm.addEventListener("input",()=>{bpmValue.textContent=bpm.value;localStorage.setItem(BPM_STORAGE_KEY,bpm.value);});
+let pendingPattern=null;
+
+function flashButton(btn){
+  btn.classList.remove("pressed");
+  void btn.offsetWidth;
+  btn.classList.add("pressed");
+  setTimeout(()=>btn.classList.remove("pressed"),140);
+}
+newBtn.addEventListener("pointerdown",()=>flashButton(newBtn));
+stopBtn.addEventListener("pointerdown",()=>flashButton(stopBtn));
+
+newBtn.addEventListener("click",()=>{
+  const fresh=makePattern();
+
+  // 재생 중이면 현재 마디를 끝까지 연주한 뒤 새 패턴으로 교체.
+  if(running){
+    pendingPattern=fresh;
+    return;
+  }
+
+  // 정지 상태에서는 즉시 새 패턴 표시.
+  activeRow=0;
+  current=fresh;
+  nextPattern=makeDifferent(key(current));
+  rowPatterns=[current,nextPattern];
+  render(current,measure);
+  renderNext(nextPattern);
+  refreshPreview();
+});
+let pendingMode=null;
+function setMode(random){
+  const wasRunning=running;
+
+  // 선택 표시는 즉시 바꾸되, 재생 중 실제 모드 전환은 현재 마디가 끝난 뒤 적용한다.
+  sameBtn.classList.toggle("active",!random);
+  randomBtn.classList.toggle("active",random);
+
+  if(wasRunning){
+    if(random===randomMode && pendingMode===null){
+      refreshPreview();
+      return;
+    }
+    pendingMode=random;
+
+    if(random){
+      // 현재 첫 번째 줄과 미리 보이던 두 번째 줄을 그대로 고정한다.
+      // 재생 위치(행)는 바꾸지 않는다.
+      if(!nextPattern) nextPattern=makeDifferent(key(current));
+      rowPatterns=[current,nextPattern];
+      activeRow=0;
+      render(current,measure);
+      renderNext(nextPattern);
+      nextRowWrap.style.display="block";
+    }
+    // 랜덤 -> 같은 패턴도 현재 마디를 끝까지 유지한다.
+    return;
+  }
+
+  // 정지 상태에서는 즉시 적용.
+  pendingMode=null;
+  randomMode=random;
+  if(random){
+    nextPattern=makeDifferent(key(current));
+    activeRow=0;
+    rowPatterns=[current,nextPattern];
+    // 첫 번째 줄은 현재 패턴, 두 번째 줄은 다음 패턴.
+    render(current,measure);
+    renderNext(nextPattern);
+  }
+  refreshPreview();
+
+  // 정지 상태에서 랜덤 버튼을 누르면 바로 시작.
+  if(random) startBtn.click();
+}
+
+sameBtn.addEventListener("click",()=>setMode(false));
+randomBtn.addEventListener("click",()=>setMode(true));
+let clickStrong=null, clickWeak=null;
+
+function makeClickBuffer(strong){
+  // 기계식 메트로놈에 가까운 아주 짧은 클릭을 미리 만들어 둔다.
+  // 매 박마다 oscillator를 새로 램프시키는 방식보다 시작 시점이 일정하다.
+  const sr=audio.sampleRate;
+  const len=Math.floor(sr*0.032);
+  const buf=audio.createBuffer(1,len,sr);
+  const data=buf.getChannelData(0);
+
+  for(let i=0;i<len;i++){
+    const t=i/sr;
+    const env=Math.exp(-t*210);
+    const tone=Math.sin(2*Math.PI*(strong?2100:1650)*t);
+    const tick=(Math.random()*2-1)*0.32;
+    data[i]=(tone*0.82+tick)*env*(strong?0.92:0.72);
+  }
+  return buf;
+}
+
+function hit(t,strong){
+  if(!audio)return;
+
+  if(!clickStrong){
+    clickStrong=makeClickBuffer(true);
+    clickWeak=makeClickBuffer(false);
+  }
+
+  const src=audio.createBufferSource();
+  const gain=audio.createGain();
+  src.buffer=strong?clickStrong:clickWeak;
+  gain.gain.setValueAtTime(0.42,t);
+  src.connect(gain);
+  gain.connect(audio.destination);
+
+  // 미래에 예약된 클릭도 '정지' 버튼으로 즉시 끊을 수 있도록 추적한다.
+  audioSources.push(src);
+  src.onended=()=>{
+    const idx=audioSources.indexOf(src);
+    if(idx>=0)audioSources.splice(idx,1);
+  };
+
+  // AudioContext의 절대 시간에 직접 예약한다.
+  src.start(t);
+}
+
+function play(p){
+  const sec=60/Number(bpm.value);
+  const now=audio.currentTime+0.03;
+  p.forEach((b,i)=>{
+    let t=now+i*sec;
+    let units=beatData(b), ai=0;
+    units.forEach(u=>{
+      if(!u.rest) hit(t,(b.accents||[]).includes(ai));
+      if(!u.rest) ai++;
+      t+=sec*u.d;
+    });
+  });
+}
+function clearBeatTimers(){beatTimers.forEach(clearTimeout);beatTimers=[];}
+function setActiveBeat(i){
+ const cells=measure.querySelectorAll('.beat');
+ cells.forEach((el,n)=>{el.classList.remove('active');if(n===i)el.classList.add('active');});
+}
+function setActiveRowBeat(i){
+  clearBeatTimers();
+  const target=activeRow===0?measure:nextMeasure;
+  const other=activeRow===0?nextMeasure:measure;
+  target.querySelectorAll('.beat').forEach((el,n)=>{el.classList.toggle('active',n===i);});
+  other.querySelectorAll('.beat').forEach(el=>el.classList.remove('active'));
+}
+function animateBeats(){
+  clearBeatTimers();
+  const sec=60000/Number(bpm.value);
+  let i=0;
+  const step=()=>{
+    if(!running)return;
+    setActiveRowBeat(i);
+    i++;
+    if(i<4) beatTimers.push(setTimeout(step,sec));
+  };
+  step();
+}
+let nextMeasureTime=0;
+function schedule(){
+ if(!running)return;
+ const sec=60/Number(bpm.value);
+ const now=audio.currentTime;
+
+ // 한 번에 다음 마디의 모든 클릭을 AudioContext 시간축에 예약한다.
+ // 다음 마디 시작 시각도 현재 마디 시작 시각에서 정확히 4박 뒤로 계산한다.
+ if(!nextMeasureTime || nextMeasureTime < now-0.10) nextMeasureTime=now+0.10;
+
+ const startAt=nextMeasureTime;
+ if(randomMode) current=rowPatterns[activeRow];
+ playAt(current,startAt);
+ animateBeatsAt(startAt);
+
+ const followingStart=startAt+sec*4;
+ nextMeasureTime=followingStart;
+
+ // 소리는 이미 정확한 AudioContext 시간으로 예약되어 있으므로
+ // 이 타이머는 '패턴 교체'만 담당한다.
+ const delay=Math.max(0,(followingStart-audio.currentTime)*1000-25);
+ timer=setTimeout(()=>{
+   if(!running)return;
+
+   // 모드 전환은 마디 경계에서만 확정한다.
+   if(pendingMode!==null){
+     const modeToApply=pendingMode;
+     pendingMode=null;
+
+     if(modeToApply){
+       // 같은 패턴 -> 랜덤:
+       // 지금 끝나는 현재 마디는 기존 패턴 그대로 마무리하고,
+       // '다음 마디'부터 화면 두 번째 줄 패턴을 바로 연주한다.
+       // 같은 패턴을 한 번 더 예약하지 않는다.
+       randomMode=true;
+       rowPatterns=[current,nextPattern];
+       activeRow=1;
+       current=rowPatterns[1];
+
+       // 두 번째 줄이 시작하는 순간 첫 번째 줄은
+       // '그 다음 진행마디'로 미리 교체한다.
+       const followingPattern=makeDifferent(key(current));
+       rowPatterns[0]=followingPattern;
+       render(followingPattern,measure);
+       renderNext(current);
+       nextPattern=followingPattern;
+     }else{
+       // 랜덤 -> 같은 패턴: 방금 연주하던 current를 그대로 반복한다.
+       randomMode=false;
+       activeRow=0;
+       render(current,measure);
+       nextRowWrap.style.display="none";
+     }
+     refreshPreview();
+     status.textContent="GO!";
+   }else if(pendingPattern){
+     current=pendingPattern;
+     pendingPattern=null;
+
+     if(randomMode){
+       // 새 패턴 요청도 현재 재생 중인 행을 끊지 않는다.
+       // 다음에 연주될 행에 넣고, 행 위치는 그대로 유지한다.
+       const inactiveRow=activeRow===0?1:0;
+       rowPatterns[inactiveRow]=current;
+       nextPattern=current;
+       if(inactiveRow===0) render(current,measure);
+       else renderNext(current);
+     }else{
+       activeRow=0;
+       rowPatterns=[current,makeDifferent(key(current))];
+       nextPattern=rowPatterns[1];
+       render(current,measure);
+     }
+     status.textContent="GO!";
+   }else if(randomMode){
+     // 마디 경계: 반대쪽 고정 행으로 즉시 이어간다.
+     // 방금 끝난 행만 새 다음 패턴으로 교체한다.
+     const finishedRow=activeRow;
+     activeRow=activeRow===0?1:0;
+     current=rowPatterns[activeRow];
+
+     const fresh=makeDifferent(key(current));
+     rowPatterns[finishedRow]=fresh;
+     nextPattern=rowPatterns[activeRow===0?1:0];
+
+     if(finishedRow===0){
+       render(fresh,measure);
+     }else{
+       renderNext(fresh);
+     }
+   }
+
+   // 다음 마디의 소리도 이 JS 타이머가 아니라 AudioContext 시각으로 예약된다.
+   schedule();
+ },delay);
+}
+function playAt(p,startAt){
+ const sec=60/Number(bpm.value);
+ p.forEach((b,i)=>{
+   let t=startAt+i*sec;
+   const units=beatData(b);
+   let ai=0;
+   units.forEach(u=>{
+     if(!u.rest) hit(t,(b.accents||[]).includes(ai));
+     if(!u.rest) ai++;
+     t+=sec*u.d;
+   });
+ });
+}
+function animateBeatsAt(startAt){
+ clearBeatTimers();
+ const sec=60/Number(bpm.value);
+ let i=0;
+ const step=()=>{
+   if(!running)return;
+   setActiveRowBeat(i);
+   i++;
+   if(i<4) beatTimers.push(setTimeout(step,Math.max(0,(startAt+i*sec-audio.currentTime)*1000)));
+ };
+ beatTimers.push(setTimeout(step,Math.max(0,(startAt-audio.currentTime)*1000)));
+}
+startBtn.addEventListener("click",async()=>{
+ if(running)return;
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC){status.textContent="오디오 지원 안 됨";return;}
+ if(!audio)audio=new AC({latencyHint:"interactive"});
+ try{
+   if(audio.state==="suspended")await audio.resume();
+   if(audio.state!=="running"){status.textContent="오디오 준비 중";return;}
+ }catch(e){console.error(e);status.textContent="오디오 준비 중";return;}
+ if(randomMode){
+   if(!rowPatterns || rowPatterns.length!==2){
+     rowPatterns=[current,nextPattern];
+   }
+   current=rowPatterns[activeRow];
+   nextPattern=rowPatterns[activeRow===0?1:0];
+   // 첫 번째 줄/두 번째 줄의 위치는 고정.
+   render(rowPatterns[0],measure);
+   renderNext(rowPatterns[1]);
+ }
+ running=true;status.textContent="GO!";nextMeasureTime=audio.currentTime+0.12;schedule();
+});
+stopBtn.addEventListener("click",stop);
+function stop(){
+  running=false;
+  pendingPattern=null;
+  pendingMode=null;
+  nextMeasureTime=0;
+  clearTimeout(timer);timer=null;clearBeatTimers();
+  // 마디가 끝날 때까지 기다리지 않고 예약된 소리를 모두 즉시 취소한다.
+  const sources=audioSources.slice();
+  audioSources.length=0;
+  sources.forEach(src=>{try{src.stop();}catch(e){}});
+  measure.querySelectorAll(".beat,.beat").forEach(el=>el.classList.remove("active"));
+  nextMeasure.querySelectorAll(".beat").forEach(el=>el.classList.remove("active"));
+  status.textContent="READY";
+}
+})();
+</script>
+</body>
+</html>
