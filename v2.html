@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>드럼 리듬 연습기 v2</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#101010;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
+.app{width:94vw;max-width:900px;margin:auto;padding:14px 0 24px}
+h1{text-align:center;margin:0;font-size:clamp(28px,6vw,52px);font-weight:900;letter-spacing:-2px}
+.sub{text-align:center;color:#aaa;margin:6px 0 14px;font-size:clamp(13px,2.5vw,20px)}
+.panel{background:#1d1d1d;border-radius:24px;padding:14px 28px;margin-bottom:8px}
+.bpmTitle{text-align:center;font-size:34px;font-weight:900}
+#bpm{width:100%;accent-color:#4d8df5}
+.bpm{width:330px;max-width:62%;height:70px;margin:5px auto 12px;border:6px solid #555;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:50px}
+.modes{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.mode{display:flex;align-items:center;gap:10px;font-size:clamp(17px,3vw,27px)}
+.mode input{appearance:none;width:30px;height:30px;margin:0;border-radius:50%;border:5px solid #aaa;background:#fff}
+.mode input:checked{border:9px solid #4d8df5}
+.modeBtn{background:transparent;border:0;color:#fff;padding:7px 4px;font-size:clamp(17px,3vw,27px);font-weight:800}
+.modeBtn.active{color:#78aaff}
+#status{text-align:center;font-size:clamp(58px,10vw,94px);font-weight:900;line-height:1;margin:8px 0}
+.row{height:160px;background:#242424;border:5px solid #303030;border-radius:20px;padding:8px;overflow:hidden}
+.previewWrap{display:none;margin-top:8px}
+.previewTitle{text-align:left;color:#aaa;font-size:14px;font-weight:800;margin:0 0 4px 8px}
+.previewRow{height:112px;background:#1b1b1b;border:3px solid #303030;border-radius:16px;padding:6px;overflow:hidden}
+.previewRow .beat{opacity:.62}
+.previewRow svg{height:92px}
+.measure{height:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.beat{min-width:0;border-left:2px solid #353535;display:flex;align-items:center;justify-content:center;padding:0 2px}
+.beat:first-child{border-left:0}
+svg{width:100%;height:130px;display:block;overflow:visible}
+.note{fill:#78c5ff}
+.stem,.beam{stroke:#78c5ff;stroke-width:5;stroke-linecap:round}
+.accent{fill:#ff7474;font-size:22px;font-weight:900}
+.label{fill:#f0f0f0;font-size:18px;font-weight:900}
+.rest{stroke:#d8d8d8;fill:none;stroke-linecap:round}
+.controls{display:flex;justify-content:center;gap:10px;margin-top:8px}
+button{border:0;border-radius:18px;padding:10px 18px;background:#303030;color:#fff;font-size:clamp(18px,3vw,26px);font-weight:800}
+button.primary{background:#fff;color:#111}
+.help{text-align:center;color:#888;font-size:clamp(12px,2vw,17px);line-height:1.4;margin-top:7px}
+@media(max-width:700px){.panel{padding:10px 15px}.bpmTitle{font-size:27px}.bpm{height:62px;font-size:43px}.row{height:140px}svg{height:112px}.previewRow{height:94px}.previewRow svg{height:78px}}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>🥁 드럼 리듬 연습기 v2</h1>
+<div class="sub">한 줄이 4박 한 마디입니다. 음표 · 쉼표 · 삼연음 · 6연음을 랜덤하게 연습합니다.</div>
+
+<section class="panel">
+<div class="bpmTitle">BPM</div>
+<input id="bpm" type="range" min="40" max="180" value="80">
+<div class="bpm" id="bpmValue">80</div>
+<div class="modes">
+<button type="button" class="modeBtn active" id="sameBtn">● 같은 패턴 반복</button>
+<button type="button" class="modeBtn" id="randomBtn">○ 매 마디 랜덤</button>
+</div>
+</section>
+
+<div id="status">READY</div>
+
+<!-- JS가 실행되지 않아도 이 안의 첫 패턴은 그대로 보입니다. -->
+<div class="row"><div class="measure" id="measure">
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="78" cy="94" rx="15" ry="9" transform="rotate(-18 78 94)"/>
+<line class="stem" x1="91" y1="92" x2="91" y2="42"/>
+<text class="accent" x="91" y="28" text-anchor="middle">&gt;</text>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="55" cy="94" rx="14" ry="8"/>
+<ellipse class="note" cx="113" cy="94" rx="14" ry="8"/>
+<line class="stem" x1="68" y1="92" x2="68" y2="45"/>
+<line class="stem" x1="126" y1="92" x2="126" y2="45"/>
+<line class="beam" x1="68" y1="45" x2="126" y2="45"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<line class="rest" x1="34" y1="34" x2="66" y2="34" stroke-width="3"/>
+<line class="rest" x1="114" y1="34" x2="146" y2="34" stroke-width="3"/>
+<text class="label" x="90" y="40" text-anchor="middle">3</text>
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="90" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="50"/>
+<line class="stem" x1="102" y1="92" x2="102" y2="50"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="50"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="76" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="104" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="48"/>
+<line class="stem" x1="88" y1="92" x2="88" y2="48"/>
+<line class="stem" x1="116" y1="92" x2="116" y2="48"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="48" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="58" x2="144" y2="58"/>
+</svg>
+</div>
+</div></div>
+<div class="previewWrap" id="previewWrap" style="display:none">
+  <div class="previewTitle">다음 마디 미리보기</div>
+  <div class="previewRow"><div class="measure" id="previewMeasure"></div></div>
+</div>
+
+<div class="controls">
+<button type="button" class="primary" id="start">▶ 시작</button>
+<button type="button" id="stop">■ 정지</button>
+<button type="button" id="new">↻ 새 패턴</button>
+</div>
+<div class="help">한 줄 = 4박(한 마디). 같은 패턴 반복은 한 마디를 계속 반복합니다. 매 마디 랜덤은 매 마디마다 다른 4박 패턴으로 바뀝니다. 쉼표에는 강 표시를 하지 않습니다. 4분 · 8분 · 16분 · 쉼표 · 3연음 · 6연음이 나옵니다.</div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const measure=document.getElementById("measure");
+const sameBtn=document.getElementById("sameBtn");
+const randomBtn=document.getElementById("randomBtn");
+let randomMode=false;
+const newBtn=document.getElementById("new");
+const startBtn=document.getElementById("start");
+const stopBtn=document.getElementById("stop");
+const bpm=document.getElementById("bpm");
+const bpmValue=document.getElementById("bpmValue");
+const status=document.getElementById("status");
+const previewWrap=document.getElementById("previewWrap");
+const previewMeasure=document.getElementById("previewMeasure");
+
+const P=[
+["q","e","t","s"],["e","q","s","e"],["s","e","q","t"],["t","s","e","q"],
+["q","r8","e","s"],["e","r8","q","t"],["s","q","r16","e"],["r8","e","t","q"],
+["q","tr","s","e"],["e","s","tr","q"],["t","r8","s","e"],["s","r16","q","tr"],
+["x","q","e","r8"],["q","x","r8","t"],["e","t","x","q"],["r16","s","e","x"],
+["e","e","e","e"],["s","r8","t","e"],["q","er","x","r16"],["tr","q","s","r8"],
+["x","r8","e","t"],["r16","t","q","x"],["e","x","re","s"],["t","e","r8","x"]
+];
+
+let current=["q","e","t","s"], nextPattern=["e","s","q","r8"], previousKey="";
+let timer=null,running=false,audio=null;
+
+function k(p){return p.join("|")}
+function pickDifferent(exclude){
+ let a=P.filter(p=>k(p)!==exclude);
+ return a[Math.floor(Math.random()*a.length)].slice();
+}
+function esc(s){return s}
+function note(x,accent=false){
+ return `<ellipse class="note" cx="${x-4}" cy="94" rx="14" ry="8" transform="rotate(-18 ${x-4} 94)"/><line class="stem" x1="${x+9}" y1="92" x2="${x+9}" y2="45"/>${accent?`<text class="accent" x="${x+8}" y="28" text-anchor="middle">&gt;</text>`:""}`;
+}
+function rest(x,double=false){
+ return `<path class="rest" d="M${x-8} 48 Q${x+20} 46 ${x+8} 62 Q${x} 72 ${x+7} 80" stroke-width="7"/>${double?`<path class="rest" d="M${x-4} 72 Q${x+18} 70 ${x+8} 84" stroke-width="5"/>`:""}`;
+}
+function beat(type){
+ let body="";
+ if(type==="q") body=note(90,true);
+ if(type==="e") body=note(58,true)+note(122)+`<line class="beam" x1="67" y1="45" x2="131" y2="45"/>`;
+ if(type==="s") body=[40,73,107,140].map((x,i)=>note(x,i===0)).join("")+`<line class="beam" x1="49" y1="45" x2="149" y2="45"/><line class="beam" x1="49" y1="55" x2="149" y2="55"/>`;
+ if(type==="t") body=note(48,true)+note(90)+note(132)+`<line class="beam" x1="58" y1="45" x2="142" y2="45"/> <text class="label" x="90" y="28" text-anchor="middle">3</text><line class="rest" x1="28" y1="24" x2="65" y2="24" stroke-width="3"/><line class="rest" x1="115" y1="24" x2="152" y2="24" stroke-width="3"/>`;
+ if(type==="x"){let a=[30,54,78,102,126,150];body=a.map((x,i)=>note(x,i===0)).join("")+`<line class="beam" x1="39" y1="45" x2="159" y2="45"/><line class="beam" x1="39" y1="55" x2="159" y2="55"/> <text class="label" x="90" y="27" text-anchor="middle">6</text>`;}
+ if(type==="r8") body=rest(90);
+ if(type==="r16") body=rest(90,true);
+ if(type==="re") body=rest(52)+note(122);
+ if(type==="er") body=note(58,true)+rest(126);
+ if(type==="tr") body=note(48,true)+rest(90)+note(132);
+ return `<svg viewBox="0 0 180 130" aria-label="${esc(type)}">${body}</svg>`;
+}
+function render(p){
+ measure.innerHTML=p.map(t=>`<div class="beat">${beat(t)}</div>`).join("");
+}
+function renderPreview(p){
+ previewMeasure.innerHTML=p.map(t=>`<div class="beat">${beat(t)}</div>`).join("");
+}
+function refreshPreview(){
+ const on=randomMode;
+ previewWrap.style.display=on ? "block" : "none";
+ if(on) renderPreview(nextPattern);
+}
+render(current);
+renderPreview(nextPattern);
+refreshPreview();
+
+bpm.addEventListener("input",()=>bpmValue.textContent=bpm.value);
+
+newBtn.addEventListener("click",()=>{
+ stop();
+ current=pickDifferent(k(current));
+ if(randomMode) nextPattern=pickDifferent(k(current));
+ render(current);
+ renderPreview(nextPattern);
+ refreshPreview();
+});
+sameBtn.addEventListener("click",()=>{
+ stop();
+ randomMode=false;
+ sameBtn.classList.add("active");
+ randomBtn.classList.remove("active");
+ render(current);
+ refreshPreview();
+});
+randomBtn.addEventListener("click",()=>{
+ stop();
+ randomMode=true;
+ sameBtn.classList.remove("active");
+ randomBtn.classList.add("active");
+ current=pickDifferent("");
+ nextPattern=pickDifferent(k(current));
+ render(current);
+ renderPreview(nextPattern);
+ refreshPreview();
+});
+
+function hit(t,strong){
+ if(!audio)return;
+ const o=audio.createOscillator(),g=audio.createGain();
+ o.frequency.setValueAtTime(strong?150:115,t);
+ o.frequency.exponentialRampToValueAtTime(65,t+.1);
+ g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(strong?.4:.25,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+.15);
+ o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.17);
+}
+function play(p){
+ const sec=60/Number(bpm.value), now=audio.currentTime+.03;
+ p.forEach((t,i)=>{
+   const s=now+i*sec;
+   if(t==="q")hit(s,true);
+   else if(t==="e"){hit(s,true);hit(s+sec/2,false)}
+   else if(t==="s")for(let j=0;j<4;j++)hit(s+j*sec/4,j===0);
+   else if(t==="t")for(let j=0;j<3;j++)hit(s+j*sec/3,j===0);
+   else if(t==="x")for(let j=0;j<6;j++)hit(s+j*sec/6,j===0);
+   else if(t==="re")hit(s+sec/2,false);
+   else if(t==="er")hit(s,true);
+   else if(t==="tr"){hit(s,true);hit(s+sec*2/3,false)}
+ });
+}
+function schedule(){
+ if(!running)return;
+ play(current);
+ const ms=(60/Number(bpm.value))*4000;
+ timer=setTimeout(()=>{
+   if(randomMode){
+     // 미리 보던 다음 마디가 실제 연주 마디가 되고,
+     // 그와 다른 새 마디를 다시 미리보기로 만든다.
+     const oldCurrent=current;
+     current=nextPattern.slice();
+     nextPattern=pickDifferent(k(current));
+     render(current);
+     renderPreview(nextPattern);
+   }
+   schedule();
+ },ms);
+}
+startBtn.addEventListener("click",async()=>{
+ if(running)return;
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!audio)audio=new AC();
+ if(audio.state==="suspended")await audio.resume();
+ if(randomMode){
+  if(k(nextPattern)===k(current)) nextPattern=pickDifferent(k(current));
+  renderPreview(nextPattern);
+}
+running=true;status.textContent="GO!";schedule();
+});
+stopBtn.addEventListener("click",stop);
+function stop(){running=false;clearTimeout(timer);timer=null;status.textContent="READY";}
+})();
+</script>
+</body>
+</html>
