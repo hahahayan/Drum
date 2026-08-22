@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="version" content="v2.1-random-fix-20260822">
+<title>드럼 리듬 연습기 v2.1</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#101010;color:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans KR",Arial,sans-serif}
+.app{width:94vw;max-width:900px;margin:auto;padding:14px 0 24px}
+h1{text-align:center;margin:0;font-size:clamp(28px,6vw,52px);font-weight:900;letter-spacing:-2px}
+.sub{text-align:center;color:#aaa;margin:6px 0 14px;font-size:clamp(13px,2.5vw,20px)}
+.panel{background:#1d1d1d;border-radius:24px;padding:14px 28px;margin-bottom:8px}
+.bpmTitle{text-align:center;font-size:34px;font-weight:900}
+#bpm{width:100%;accent-color:#4d8df5}
+.bpm{width:330px;max-width:62%;height:70px;margin:5px auto 12px;border:6px solid #555;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:50px}
+.modes{display:flex;justify-content:center;gap:32px;flex-wrap:wrap}
+.mode{display:flex;align-items:center;gap:10px;font-size:clamp(17px,3vw,27px)}
+.mode input{appearance:none;width:30px;height:30px;margin:0;border-radius:50%;border:5px solid #aaa;background:#fff}
+.mode input:checked{border:9px solid #4d8df5}
+.modeBtn{background:transparent;border:0;color:#fff;padding:7px 4px;font-size:clamp(17px,3vw,27px);font-weight:800;display:flex;align-items:center;gap:10px;cursor:pointer}
+.modeBtn .dot{width:30px;height:30px;border-radius:50%;border:5px solid #aaa;background:#fff;display:inline-block;flex:0 0 auto}
+.modeBtn.active{color:#78aaff}
+.modeBtn.active .dot{background:#fff;border:9px solid #4d8df5}
+.modeBtn:focus-visible{outline:2px solid #78aaff;outline-offset:3px}
+#status{text-align:center;font-size:clamp(58px,10vw,94px);font-weight:900;line-height:1;margin:8px 0}
+.row{height:160px;background:#242424;border:5px solid #303030;border-radius:20px;padding:8px;overflow:hidden}
+.previewWrap{display:none;margin-top:8px}
+.previewTitle{text-align:left;color:#aaa;font-size:14px;font-weight:800;margin:0 0 4px 8px}
+.previewRow{height:112px;background:#1b1b1b;border:3px solid #303030;border-radius:16px;padding:6px;overflow:hidden}
+.previewRow .beat{opacity:.62}
+.previewRow svg{height:92px}
+.measure{height:100%;display:grid;grid-template-columns:repeat(4,1fr)}
+.beat{min-width:0;border-left:2px solid #353535;display:flex;align-items:center;justify-content:center;padding:0 2px}
+.beat:first-child{border-left:0}
+svg{width:100%;height:130px;display:block;overflow:visible}
+.note{fill:#78c5ff}
+.stem,.beam{stroke:#78c5ff;stroke-width:5;stroke-linecap:round}
+.restGlyph{fill:#e8e8e8;font-size:58px;font-family:"Noto Music","Noto Sans Symbols 2","Segoe UI Symbol",sans-serif;font-weight:400}
+.beat.active{border:4px solid #4d8df5 !important;border-radius:10px;box-shadow:0 0 0 1px #4d8df5 inset;transform:scale(.98)}
+.accent{fill:#ff7474;font-size:22px;font-weight:900}
+.label{fill:#f0f0f0;font-size:18px;font-weight:900}
+.rest{stroke:#f0f0f0;fill:none;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.controls{display:flex;justify-content:center;gap:10px;margin-top:8px}
+button{border:0;border-radius:18px;padding:10px 18px;background:#303030;color:#fff;font-size:clamp(18px,3vw,26px);font-weight:800}
+button.primary{background:#fff;color:#111}
+.help{text-align:center;color:#888;font-size:clamp(12px,2vw,17px);line-height:1.4;margin-top:7px}
+@media(max-width:700px){.panel{padding:10px 15px}.bpmTitle{font-size:27px}.bpm{height:62px;font-size:43px}.row{height:140px}svg{height:112px}.previewRow{height:94px}.previewRow svg{height:78px}}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>🥁 드럼 리듬 연습기 v2</h1>
+<div class="sub">한 줄이 4박 한 마디입니다. 음표 · 쉼표 · 삼연음 · 6연음을 랜덤하게 연습합니다.</div>
+
+<section class="panel">
+<div class="bpmTitle">BPM</div>
+<input id="bpm" type="range" min="40" max="180" value="80">
+<div class="bpm" id="bpmValue">80</div>
+<div class="modes">
+<button type="button" class="modeBtn active" id="sameBtn"><span class="dot"></span><span>같은 패턴 반복</span></button>
+<button type="button" class="modeBtn" id="randomBtn"><span class="dot"></span><span>매 마디 랜덤</span></button>
+</div>
+</section>
+
+<div id="status">READY</div>
+
+<!-- JS가 실행되지 않아도 이 안의 첫 패턴은 그대로 보입니다. -->
+<div class="row"><div class="measure" id="measure">
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="78" cy="94" rx="15" ry="9" transform="rotate(-18 78 94)"/>
+<line class="stem" x1="91" y1="92" x2="91" y2="42"/>
+<text class="accent" x="91" y="28" text-anchor="middle">&gt;</text>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="55" cy="94" rx="14" ry="8"/>
+<ellipse class="note" cx="113" cy="94" rx="14" ry="8"/>
+<line class="stem" x1="68" y1="92" x2="68" y2="45"/>
+<line class="stem" x1="126" y1="92" x2="126" y2="45"/>
+<line class="beam" x1="68" y1="45" x2="126" y2="45"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<line class="rest" x1="34" y1="34" x2="66" y2="34" stroke-width="3"/>
+<line class="rest" x1="114" y1="34" x2="146" y2="34" stroke-width="3"/>
+<text class="label" x="90" y="40" text-anchor="middle">3</text>
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="90" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="50"/>
+<line class="stem" x1="102" y1="92" x2="102" y2="50"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="50"/>
+</svg>
+</div>
+<div class="beat">
+<svg viewBox="0 0 180 130">
+<ellipse class="note" cx="48" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="76" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="104" cy="94" rx="13" ry="8"/>
+<ellipse class="note" cx="132" cy="94" rx="13" ry="8"/>
+<line class="stem" x1="60" y1="92" x2="60" y2="48"/>
+<line class="stem" x1="88" y1="92" x2="88" y2="48"/>
+<line class="stem" x1="116" y1="92" x2="116" y2="48"/>
+<line class="stem" x1="144" y1="92" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="48" x2="144" y2="48"/>
+<line class="beam" x1="60" y1="58" x2="144" y2="58"/>
+</svg>
+</div>
+</div></div>
+<div class="previewWrap" id="previewWrap">
+  <div class="previewTitle">다음 마디 미리보기</div>
+  <div class="previewRow"><div class="measure" id="previewMeasure"></div></div>
+</div>
+
+<div class="controls">
+<button type="button" class="primary" id="start">▶ 시작</button>
+<button type="button" id="stop">■ 정지</button>
+<button type="button" id="new">↻ 새 패턴</button>
+</div>
+<div class="help">한 줄 = 4박(한 마디). 같은 패턴 반복은 한 마디를 계속 반복합니다. 매 마디 랜덤은 매 마디마다 다른 4박 패턴으로 바뀝니다. 쉼표에는 강 표시를 하지 않습니다. 4분 · 8분 · 16분 · 쉼표 · 3연음 · 6연음이 나옵니다.</div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const measure=document.getElementById("measure");
+const sameBtn=document.getElementById("sameBtn");
+const randomBtn=document.getElementById("randomBtn");
+let randomMode=false;
+const newBtn=document.getElementById("new");
+const startBtn=document.getElementById("start");
+const stopBtn=document.getElementById("stop");
+const bpm=document.getElementById("bpm");
+const bpmValue=document.getElementById("bpmValue");
+const status=document.getElementById("status");
+const previewWrap=document.getElementById("previewWrap");
+const previewMeasure=document.getElementById("previewMeasure");
+
+const TYPES=["q","e","s","t","x","r8","r16","re","er","tr"];
+const WEIGHTS=[14,18,16,12,8,6,5,5,5,4];
+let current=null,nextPattern=null,timer=null,running=false,audio=null,beatTimers=[];
+function weightedType(){let total=WEIGHTS.reduce((a,b)=>a+b,0),r=Math.random()*total;for(let i=0;i<TYPES.length;i++){r-=WEIGHTS[i];if(r<0)return TYPES[i]}return TYPES[0]}
+function countHits(type){return ({q:1,e:2,s:4,t:3,x:6,r8:0,r16:0,re:1,er:1,tr:2}[type]||0)}
+function shuffle(a){return a.slice().sort(()=>Math.random()-.5)}
+function makePattern(){
+  // 한 마디 안에서도 서로 다른 리듬값이 섞이도록 4박의 종류를 중복 없이 뽑는다.
+  let types=shuffle(TYPES).slice(0,4);
+  // 너무 드문 6연음/쉼표만 몰리지 않도록 가중치 후보와 한 번 더 섞는다.
+  if(Math.random()<0.65){
+    types=shuffle([weightedType(),weightedType(),weightedType(),weightedType()]);
+    const uniq=[]; for(const t of types) if(!uniq.includes(t)) uniq.push(t);
+    for(const t of shuffle(TYPES)) if(uniq.length<4&&!uniq.includes(t)) uniq.push(t);
+    types=uniq.slice(0,4);
+  }
+  const p=types.map(type=>({type,accents:[]}));
+  // 강세는 특정 첫 박에 고정하지 않고 2~3개 박에 골고루 분산.
+  const beatOrder=shuffle([0,1,2,3]);
+  const accentBeats=beatOrder.slice(0,Math.random()<0.55?2:3);
+  for(const bi of accentBeats){
+    const n=countHits(p[bi].type);
+    if(n>0) p[bi].accents=[Math.floor(Math.random()*n)];
+  }
+  // 적어도 2~4박 중 하나에는 강세가 생기도록 보장한다.
+  if(!p.slice(1).some(b=>b.accents.length)){
+    const candidates=p.map((b,i)=>[b,i]).filter(([b,i])=>i>0&&countHits(b.type)>0);
+    if(candidates.length){const [b,i]=candidates[Math.floor(Math.random()*candidates.length)];b.accents=[Math.floor(Math.random()*countHits(b.type))]}
+  }
+  return p;
+}
+function key(p){return JSON.stringify(p)}
+function makeDifferent(exclude){let p;do{p=makePattern()}while(key(p)===exclude);return p}
+current=makePattern();nextPattern=makeDifferent(key(current));
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function note(x,accent=false){return `<ellipse class="note" cx="${x-4}" cy="94" rx="14" ry="8" transform="rotate(-18 ${x-4} 94)"/><line class="stem" x1="${x+9}" y1="92" x2="${x+9}" y2="45"/>${accent?`<text class="accent" x="${x+9}" y="29" text-anchor="middle">&gt;</text>`:""}`}
+function rest(type){
+  if(type==="r8") return `<g aria-label="8분쉼표">
+    <path class="rest" d="M92 36 L92 77 C92 88 103 92 111 84"/>
+    <path class="rest" d="M92 36 C105 35 119 39 115 48 C112 55 103 58 98 61"/>
+  </g>`;
+  if(type==="r16") return `<g aria-label="16분쉼표">
+    <path class="rest" d="M88 35 L88 76 C88 87 99 91 107 83"/>
+    <path class="rest" d="M88 35 C101 34 114 38 111 47 C108 54 99 57 94 60"/>
+    <path class="rest" d="M106 52 C119 51 132 55 129 64 C126 71 117 74 112 77"/>
+  </g>`;
+  return `<g aria-label="4분쉼표"><path class="rest" d="M78 35 L105 35 L91 52 L108 62 L91 74 L108 91 L98 101"/></g>`;
+}
+function beat(type,accents=[]){let body="",a=i=>(accents||[]).includes(i);if(type==="q")body=note(90,a(0));if(type==="e")body=note(58,a(0))+note(122,a(1))+`<line class="beam" x1="67" y1="45" x2="131" y2="45"/>`;if(type==="s")body=[40,73,107,140].map((x,i)=>note(x,a(i))).join("")+`<line class="beam" x1="49" y1="45" x2="149" y2="45"/><line class="beam" x1="49" y1="55" x2="149" y2="55"/>`;if(type==="t")body=note(48,a(0))+note(90,a(1))+note(132,a(2))+`<line class="beam" x1="58" y1="45" x2="142" y2="45"/><text class="label" x="90" y="28" text-anchor="middle">3</text>`;if(type==="x")body=[30,54,78,102,126,150].map((x,i)=>note(x,a(i))).join("")+`<line class="beam" x1="39" y1="45" x2="159" y2="45"/><line class="beam" x1="39" y1="55" x2="159" y2="55"/><text class="label" x="90" y="27" text-anchor="middle">6</text>`;if(type==="r8"||type==="r16")body=rest(type);if(type==="re")body=rest("r8")+note(122,a(0));if(type==="er")body=note(58,a(0))+rest("r8");if(type==="tr")body=note(48,a(0))+rest("r8")+note(132,a(1));return `<svg viewBox="0 0 180 130" aria-label="${esc(type)}">${body}</svg>`}
+function render(p){measure.innerHTML=p.map(b=>`<div class="beat">${beat(b.type,b.accents)}</div>`).join("")}
+function renderPreview(p){previewMeasure.innerHTML=p.map(b=>`<div class="beat">${beat(b.type,b.accents)}</div>`).join("")}
+function refreshPreview(){previewWrap.style.display=randomMode?"block":"none";if(randomMode)renderPreview(nextPattern)}
+render(current);renderPreview(nextPattern);refreshPreview();
+bpm.addEventListener("input",()=>bpmValue.textContent=bpm.value);
+newBtn.addEventListener("click",()=>{stop();current=makeDifferent(key(current));nextPattern=makeDifferent(key(current));render(current);renderPreview(nextPattern);refreshPreview()});
+function setMode(random){randomMode=random;sameBtn.classList.toggle("active",!random);randomBtn.classList.toggle("active",random);if(random){nextPattern=makeDifferent(key(current));renderPreview(nextPattern)}refreshPreview()}
+sameBtn.addEventListener("click",()=>{stop();setMode(false)});randomBtn.addEventListener("click",()=>{stop();setMode(true)});
+function hit(t,strong){
+ if(!audio || audio.state !== "running")return;
+ const o=audio.createOscillator(),g=audio.createGain();
+ o.type="triangle";
+ o.frequency.setValueAtTime(strong?150:115,t);
+ o.frequency.exponentialRampToValueAtTime(65,t+0.1);
+ g.gain.setValueAtTime(0.0001,t);
+ g.gain.exponentialRampToValueAtTime(strong?0.42:0.26,t+0.005);
+ g.gain.exponentialRampToValueAtTime(0.0001,t+0.15);
+ o.connect(g);g.connect(audio.destination);
+ o.start(t);o.stop(t+0.17);
+}
+function play(p){
+  const sec=60/Number(bpm.value);
+  const now=audio.currentTime+0.03;
+  p.forEach((b,i)=>{
+    const st=now+i*sec;
+    const acc=new Set(b.accents||[]);
+    if(b.type==='q') hit(st,acc.has(0));
+    else if(b.type==='e'){ hit(st,acc.has(0)); hit(st+sec*0.5,acc.has(1)); }
+    else if(b.type==='s'){ for(let j=0;j<4;j++) hit(st+sec*j*0.25,acc.has(j)); }
+    else if(b.type==='t'){ for(let j=0;j<3;j++) hit(st+sec*j/3,acc.has(j)); }
+    else if(b.type==='x'){ for(let j=0;j<6;j++) hit(st+sec*j/6,acc.has(j)); }
+    else if(b.type==='re'){ hit(st+sec*0.5,acc.has(0)); }
+    else if(b.type==='er'){ hit(st,acc.has(0)); }
+    else if(b.type==='tr'){ hit(st,acc.has(0)); hit(st+sec*2/3,acc.has(1)); }
+    // r8 / r16 / q-rest는 쉼표이므로 소리를 내지 않습니다.
+  });
+}
+function clearBeatTimers(){beatTimers.forEach(clearTimeout);beatTimers=[];}
+function setActiveBeat(i){
+ const cells=measure.querySelectorAll('.beat');
+ cells.forEach((el,n)=>{el.classList.remove('active');if(n===i)el.classList.add('active');});
+}
+function animateBeats(){
+  clearBeatTimers();
+  const sec=60000/Number(bpm.value);
+  setActiveBeat(0);
+  for(let i=1;i<4;i++) beatTimers.push(setTimeout(()=>setActiveBeat(i),sec*i));
+}
+
+function schedule(){
+ if(!running)return;
+ play(current);
+ animateBeats();
+ const ms=(60/Number(bpm.value))*4000;
+ timer=setTimeout(()=>{
+   if(!running)return;
+   clearBeatTimers();
+   if(randomMode){
+     current=nextPattern;
+     nextPattern=makeDifferent(key(current));
+     render(current);
+     renderPreview(nextPattern);
+   }
+   schedule();
+ },Math.max(100,ms-35));
+}
+
+startBtn.addEventListener("click",async()=>{
+ if(running)return;
+ const AC=window.AudioContext||window.webkitAudioContext;
+ if(!AC){status.textContent="오디오 지원 안 됨";return;}
+ if(!audio)audio=new AC();
+ try{
+   if(audio.state==="suspended")await audio.resume();
+   if(audio.state!=="running"){status.textContent="오디오 준비 중";return;}
+   hit(audio.currentTime+0.01,true);
+ }catch(e){console.error(e);status.textContent="오디오 준비 중";return;}
+ if(randomMode){
+   if(key(nextPattern)===key(current))nextPattern=makeDifferent(key(current));
+   renderPreview(nextPattern);
+ }
+ running=true;status.textContent="GO!";schedule();
+});
+stopBtn.addEventListener("click",stop);
+function stop(){running=false;clearTimeout(timer);timer=null;clearBeatTimers();measure.querySelectorAll(".beat").forEach(el=>el.classList.remove("active"));status.textContent="READY";}
+})();
+</script>
+</body>
+</html>
